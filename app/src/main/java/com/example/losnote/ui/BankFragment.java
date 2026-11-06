@@ -579,7 +579,7 @@ public class BankFragment extends Fragment {
                 arr.put(o);
             }
             JSONArray logs = new JSONArray();
-            for (DailyLog d : db.queryAllDailyLogs()) {
+            for (DailyLog d : db.queryAllDailyLogs(10000)) {
                 JSONObject o = new JSONObject();
                 o.put("uuid", d.uuid == null ? "" : d.uuid);
                 o.put("content", d.content);

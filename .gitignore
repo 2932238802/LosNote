@@ -21,3 +21,6 @@ web/dist/
 .npm-logs/
 server/data/
 .env
+.toolchain/
+local.properties
+dist/

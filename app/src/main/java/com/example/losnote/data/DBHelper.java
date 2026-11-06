@@ -985,7 +985,8 @@ public class DBHelper extends SQLiteOpenHelper {
                     return false;
                 }
                 if (tombTs > 0) {
-                    clearTombstone(db, KIND_NOTE, n.uuid);
+                    db.delete(TABLE_TOMB, T_KIND + "=? AND " + T_UUID + "=?",
+                            new String[]{KIND_NOTE, n.uuid});
                 }
                 db.insert(TABLE, null, remoteNoteValues(n));
                 db.setTransactionSuccessful();
@@ -1090,7 +1091,8 @@ public class DBHelper extends SQLiteOpenHelper {
                     return false;
                 }
                 if (tombTs > 0) {
-                    clearTombstone(db, KIND_DAILY, d.uuid);
+                    db.delete(TABLE_TOMB, T_KIND + "=? AND " + T_UUID + "=?",
+                            new String[]{KIND_DAILY, d.uuid});
                 }
                 ContentValues cv = new ContentValues();
                 cv.put(DL_CONTENT, d.content);
