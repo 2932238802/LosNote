@@ -91,7 +91,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { api } from '../api.js';
 import { plainSummary, humanDue } from '../markdown.js';
 import MarkdownView from '../components/MarkdownView.vue';
@@ -205,7 +205,16 @@ export default {
       window.addEventListener('keydown', onKeydown);
     });
 
-    onUnmounted(() => window.removeEventListener('keydown', onKeydown));
+    // 弹层打开时锁住背景滚动，手机上滑详情不会把后面的列表一起滚走
+    watch(active, (v) => {
+      document.body.style.overflow = v ? 'hidden' : '';
+      document.documentElement.style.overflow = v ? 'hidden' : '';
+    });
+    onUnmounted(() => {
+      window.removeEventListener('keydown', onKeydown);
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    });
 
     return {
       items,
