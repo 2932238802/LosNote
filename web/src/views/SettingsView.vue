@@ -34,7 +34,7 @@
 
     <div class="panel stack">
       <strong>整库导出</strong>
-      <p class="hint">导出包含复习进度、星级和复习记录的完整快照，可用来备份或迁移。</p>
+      <p class="hint">导出与安卓端 v2 备份同格式（含 uuid、复习进度、星级、今日足迹），可以直接导回手机。</p>
       <div class="row">
         <button :disabled="exporting" @click="exportAll">
           {{ exporting ? '导出中…' : '导出 JSON' }}
@@ -112,13 +112,8 @@ export default {
       exporting.value = true;
       error.value = '';
       try {
-        const res = await api.pull(0, 5000);
-        const payload = {
-          version: 2,
-          exportedAt: new Date().toISOString(),
-          notes: res.notes || [],
-          reviews: res.reviews || [],
-        };
+        // 服务端统一生成 v2 备份，字段与安卓导出一致（不含墓碑、含足迹）
+        const payload = await api.exportBackup();
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

@@ -29,6 +29,7 @@ import {
   listDailyLogs,
   createDailyLog,
   deleteDailyLog,
+  exportBackup,
 } from './notes.js';
 import { pull, push } from './sync.js';
 import { aiRoutes } from './ai.js';
@@ -134,6 +135,9 @@ route('DELETE', /^\/api\/notes\/([^/]+)$/, ({ params }) => {
 });
 
 route('GET', /^\/api\/categories$/, () => ({ items: listCategories(db) }));
+
+// 整库备份，字段对齐安卓 v2 导出
+route('GET', /^\/api\/export$/, () => exportBackup(db));
 
 route('GET', /^\/api\/quiz\/due$/, ({ url }) => {
   const items = listDue(db, {

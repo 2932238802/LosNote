@@ -76,6 +76,7 @@ export const api = {
   pull: (since, limit = 500) =>
     request('GET', `/api/sync?since=${encodeURIComponent(since)}&limit=${limit}`),
   push: (body) => request('POST', '/api/sync', body),
+  exportBackup: () => request('GET', '/api/export'),
 
   aiSettings: () => request('GET', '/api/settings/ai'),
   saveAiSettings: (patch) => request('PUT', '/api/settings/ai', patch),

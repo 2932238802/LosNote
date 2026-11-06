@@ -203,6 +203,45 @@ export function reviewNote(db, uuid, grade, now = Date.now()) {
   return n;
 }
 
+/**
+ * 整库备份，字段与安卓端 v2 导出保持一致，才能互相导入：
+ *   { version: 2, exportedAt, reviewHistoryIncluded: false, notes: [...], dailyLogs: [...] }
+ * 不含墓碑（删掉的题不该被备份“复活”），不含复习明细（与安卓一致）。
+ */
+export function exportBackup(db, now = Date.now()) {
+  const notes = db
+    .prepare('SELECT * FROM notes WHERE deleted = 0 ORDER BY created_at ASC, uuid ASC')
+    .all()
+    .map(rowToNote)
+    .map((n) => ({
+      uuid: n.uuid,
+      name: n.name,
+      definition: n.definition,
+      category: n.category,
+      createdAt: n.createdAt,
+      mastery: n.mastery,
+      intervalDays: n.intervalDays,
+      easeFactor: n.easeFactor,
+      reviewCount: n.reviewCount,
+      nextReview: n.nextReview,
+      lastReview: n.lastReview,
+      stars: n.stars,
+    }));
+  const dailyLogs = db
+    .prepare('SELECT * FROM daily_logs WHERE deleted = 0 ORDER BY created_at ASC, uuid ASC')
+    .all()
+    .map(rowToDailyLog)
+    .map((d) => ({ uuid: d.uuid, content: d.content, createdAt: d.createdAt }));
+  return {
+    version: 2,
+    exportedAt: new Date(now).toISOString(),
+    exportedBy: 'losnote-server',
+    reviewHistoryIncluded: false,
+    notes,
+    dailyLogs,
+  };
+}
+
 /** 列表 + 搜索 + 栏目筛选（不含墓碑） */
 export function listNotes(db, { q = '', category = '', limit = 200, offset = 0 } = {}) {
   const where = ['deleted = 0'];

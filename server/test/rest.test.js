@@ -215,6 +215,53 @@ test('批量解析与提交导入', async () => {
   assert.equal(list.payload.items.length, 2);
 });
 
+test('整库导出：v2 格式、含足迹、不含墓碑、字段对齐安卓', async () => {
+  const made = await json('/api/notes', {
+    method: 'POST',
+    body: { name: '导出用题', definition: '# 标题\n\n| a | b |', category: '导出' },
+  });
+  const uuid = made.payload.note.uuid;
+  await json('/api/notes/' + uuid + '/review', { method: 'POST', body: { grade: 1 } });
+  await json('/api/daily', { method: 'POST', body: { content: '今天背了 20 个单词' } });
+
+  const doomed = await json('/api/notes', {
+    method: 'POST',
+    body: { name: '导出前删掉的', definition: 'x', category: '导出' },
+  });
+  await call('/api/notes/' + doomed.payload.note.uuid, { method: 'DELETE' });
+
+  const exp = await json('/api/export');
+  assert.equal(exp.status, 200);
+  const b = exp.payload;
+  assert.equal(b.version, 2);
+  assert.equal(b.reviewHistoryIncluded, false);
+  assert.ok(b.exportedAt);
+
+  const mine = b.notes.find((n) => n.uuid === uuid);
+  assert.ok(mine, '导出里应有自己建的题');
+  assert.equal(mine.name, '导出用题');
+  assert.equal(mine.reviewCount, 1);
+  assert.equal(mine.stars, 2, 'GOOD 给 2 星');
+  for (const key of [
+    'uuid', 'name', 'definition', 'category', 'createdAt', 'mastery',
+    'intervalDays', 'easeFactor', 'reviewCount', 'nextReview', 'lastReview', 'stars',
+  ]) {
+    assert.ok(key in mine, '缺少安卓 v2 需要的字段: ' + key);
+  }
+  assert.equal('deleted' in mine, false, '备份里不应出现墓碑标记');
+
+  assert.ok(
+    !b.notes.some((n) => n.uuid === doomed.payload.note.uuid),
+    '删掉的题不该出现在备份里'
+  );
+  assert.ok(
+    b.dailyLogs.some((d) => d.content === '今天背了 20 个单词'),
+    '足迹应进备份'
+  );
+  const log = b.dailyLogs.find((d) => d.content === '今天背了 20 个单词');
+  assert.deepEqual(Object.keys(log).sort(), ['content', 'createdAt', 'uuid'].sort());
+});
+
 test('AI 设置：只回 hasKey，不回显密钥', async () => {
   const saved = await json('/api/settings/ai', {
     method: 'PUT',
