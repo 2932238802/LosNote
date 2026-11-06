@@ -97,7 +97,14 @@ docker compose up -d --build
 ## 测试
 
 ```bash
-cd server && npm test       # node:test，SRS / 导入解析 / 同步（含墓碑），28 个用例
+cd server && npm test       # node:test：SRS / 导入解析 / 同步（含墓碑）/ REST 路由集成，38 个用例
+```
+
+网页端可用真实浏览器跑一遍（需要本地有 Playwright 的 Chromium，见 `web/e2e/README.md`）：
+
+```bash
+# 先起服务：LOSNOTE_TOKEN=crud-token LOSNOTE_PORT=8902 node server/src/index.js
+cd web && PLAYWRIGHT_BROWSERS_PATH=... node e2e/crud.mjs
 ```
 
 安卓端 `./gradlew assembleDebug` 与 `./gradlew test` 均已实测通过，其中 `DBHelperSyncTest` 用 Robolectric 跑真实 SQLite，覆盖 v5→v6 迁移与字段组 LWW（WSL/Linux 下直接 `scripts/test-android.sh`）；Docker 镜像也已实际起容器验证（`/api/health`、网页端 200、无令牌 401）。

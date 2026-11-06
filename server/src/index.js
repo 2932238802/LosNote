@@ -9,7 +9,7 @@
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { openDb } from './db.js';
@@ -38,7 +38,8 @@ const SERVER_DIR = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 const TOKEN = process.env.LOSNOTE_TOKEN || '';
 const PORT = Number(process.env.LOSNOTE_PORT || 8787);
 const DB_PATH = process.env.LOSNOTE_DB || join(SERVER_DIR, 'data', 'losnote.db');
-const STATIC_DIR = process.env.LOSNOTE_STATIC || join(SERVER_DIR, '..', 'web', 'dist');
+// 用 resolve 归一化：否则 LOSNOTE_STATIC 里带 .. 时，下面的 startsWith 校验会把所有请求判成 403
+const STATIC_DIR = resolve(process.env.LOSNOTE_STATIC || join(SERVER_DIR, '..', 'web', 'dist'));
 
 const db = openDb(DB_PATH);
 
@@ -114,7 +115,8 @@ route('POST', /^\/api\/notes$/, async ({ req }) => {
 
 route('GET', /^\/api\/notes\/([^/]+)$/, ({ params }) => {
   const note = getNote(db, params[0]);
-  if (!note) throw Object.assign(new Error('题目不存在'), { status: 404 });
+  // 软删的记录对 REST 客户端就是不存在（同步接口仍会下发墓碑，走 /api/sync）
+  if (!note || note.deleted) throw Object.assign(new Error('题目不存在'), { status: 404 });
   return { note };
 });
 
@@ -218,8 +220,8 @@ const MIME = {
 
 async function serveStatic(req, res, pathname) {
   const rel = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');
-  let file = join(STATIC_DIR, rel);
-  if (!file.startsWith(STATIC_DIR)) {
+  let file = resolve(join(STATIC_DIR, rel));
+  if (file !== STATIC_DIR && !file.startsWith(STATIC_DIR + sep)) {
     return fail(res, 403, '禁止访问');
   }
   let info = await stat(file).catch(() => null);
