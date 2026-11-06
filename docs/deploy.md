@@ -28,6 +28,13 @@ head -c 24 /dev/urandom | base64 | tr -d '/+=' | head -c 32; echo
 
 ```bash
 docker compose up -d --build
+```
+
+> 没有域名、就先用 `http://服务器IP:8787` 直连的话，在 `.env` 里再加一行
+> `LOSNOTE_BIND=0.0.0.0`（默认只监听 127.0.0.1，给反代用）。手机端地址就填
+> `http://服务器IP:8787`，令牌填同一串。
+
+```bash
 docker compose ps
 curl http://127.0.0.1:8787/api/health
 ```

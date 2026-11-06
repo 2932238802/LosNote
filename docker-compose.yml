@@ -5,9 +5,9 @@ services:
     container_name: losnote
     restart: unless-stopped
     ports:
-      # 只监听回环更安全：前面用 Caddy / Nginx 反代并配 HTTPS
-      # 若直接对外暴露，改成 "8787:8787"
-      - "127.0.0.1:8787:8787"
+      # 默认只监听回环（前面用 Caddy / Nginx 反代并配 HTTPS，推荐）。
+      # 没有域名、想直接用 http://服务器IP:8787 访问时，在 .env 里加 LOSNOTE_BIND=0.0.0.0
+      - "${LOSNOTE_BIND:-127.0.0.1}:8787:8787"
     environment:
       LOSNOTE_TOKEN: ${LOSNOTE_TOKEN:?需要在 .env 里设置 LOSNOTE_TOKEN}
       LOSNOTE_DB: /data/losnote.db
