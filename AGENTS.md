@@ -64,7 +64,8 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 
 - **不要改 view id**：四个 Fragment 和两个 Adapter 都直接 `findViewById`，改 id 会静默返回 null。
 - 颜色只用 `values/colors.xml` 里的语义色（`theme_primary` / `text_secondary` / `tag_bg` / `card_bg` …），深浅色各一份在 `values-night/`；**不写死 #RRGGBB**。
-- 组件样式集中在 `values/styles.xml`：`Widget.LosNote.Card`（18dp 圆角、白底、1dp 阴影）、`Widget.LosNote.SearchField`（药丸搜索框）、`TextAppearance.LosNote.Display`（28sp 页面标题）。
+- 配色对齐 Theseus 的设计令牌（`~/LosAngelous/Theseus/frontend-vue/src/styles/tokens.css`）：石板灰主色 + 纸面卡片 + 1dp 细边框，不堆阴影；改色时两边保持同一套语气。
+- 组件样式集中在 `values/styles.xml`：`Widget.LosNote.Card`（12dp 圆角、`card_bg` 底、1dp `card_stroke` 边框、无阴影）、`Widget.LosNote.SearchField`（药丸搜索框）、`TextAppearance.LosNote.Display`（28sp 页面标题）。
 - 主题里 **必须保留 `elevationOverlayEnabled=false`**：否则 Material 3 会给卡片叠约 7% 主色，白卡变 #EFF1F4 灰。
 - `app:itemActiveIndicatorColor` 是 BottomNavigationView 的**子视图属性**，只能写进 style，写进布局会编译报错。
 - 想看界面长什么样又没手机：`bash scripts/test-android.sh --tests "com.example.losnote.ui.UiShotTest"`，会用 Robolectric 原生图形把四页渲染成 `app/build/ui-shots/*.png`。

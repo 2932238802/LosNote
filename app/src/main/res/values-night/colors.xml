@@ -1,46 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 深色：Theseus dark —— 近黑底 + 石墨面板 + 去饱和的绿/金 -->
 <resources>
-    <color name="theme_primary">#A9C7F0</color>
-    <color name="theme_on_primary">#0F1F35</color>
-    <color name="theme_primary_container">#2C4B78</color>
-    <color name="theme_on_primary_container">#DCE6F6</color>
+    <color name="theme_primary">#EDEDF2</color>
+    <color name="theme_on_primary">#1C1C1C</color>
+    <color name="theme_primary_container">#3F3F52</color>
+    <color name="theme_on_primary_container">#E7E7EE</color>
 
-    <color name="theme_secondary">#7FD8C6</color>
-    <color name="theme_on_secondary">#00352B</color>
-    <color name="theme_secondary_container">#0F5A4B</color>
-    <color name="theme_on_secondary_container">#CDEFE7</color>
+    <color name="theme_secondary">#8FC7A6</color>
+    <color name="theme_on_secondary">#1C1C1C</color>
+    <color name="theme_secondary_container">#23392D</color>
+    <color name="theme_on_secondary_container">#CFE7D9</color>
 
-    <color name="theme_tertiary">#E8C070</color>
-    <color name="theme_on_tertiary">#3A2A00</color>
-    <color name="theme_tertiary_container">#59431A</color>
-    <color name="theme_on_tertiary_container">#FFE9A8</color>
+    <color name="theme_tertiary">#D9B36C</color>
+    <color name="theme_on_tertiary">#1C1C1C</color>
+    <color name="theme_tertiary_container">#3A2F1E</color>
+    <color name="theme_on_tertiary_container">#F0DFC2</color>
 
-    <color name="theme_surface">#0F141B</color>
-    <color name="theme_surface_variant">#232B38</color>
-    <color name="theme_surface_container_lowest">#0A0E13</color>
-    <color name="theme_surface_container_low">#121821</color>
-    <color name="theme_surface_container">#161D27</color>
-    <color name="theme_surface_container_high">#1D252F</color>
-    <color name="theme_surface_container_highest">#242D39</color>
-    <color name="theme_background">#080B10</color>
+    <color name="theme_error">#E08C8C</color>
+    <color name="theme_on_error">#1C1C1C</color>
+    <color name="theme_error_container">#3D2424</color>
+    <color name="theme_on_error_container">#F2D6D6</color>
 
-    <color name="theme_on_surface">#E3E8F0</color>
-    <color name="theme_on_surface_variant">#B4BDCC</color>
-    <color name="theme_outline">#6E7A8C</color>
-    <color name="theme_outline_variant">#303845</color>
+    <color name="theme_surface">#22222B</color>
+    <color name="theme_on_surface">#F2F2F2</color>
+    <color name="theme_surface_variant">#33333F</color>
+    <color name="theme_on_surface_variant">#B3B6BD</color>
+    <color name="theme_outline">#7A7A88</color>
+    <color name="theme_outline_variant">#4B4B5C</color>
+    <color name="theme_background">#17171C</color>
+    <color name="theme_surface_container_lowest">#1B1B21</color>
+    <color name="theme_surface_container_low">#1E1E25</color>
+    <color name="theme_surface_container">#22222B</color>
+    <color name="theme_surface_container_high">#2A2A34</color>
+    <color name="theme_surface_container_highest">#33333F</color>
 
-    <color name="theme_error">#FFB4AB</color>
-    <color name="theme_on_error">#690005</color>
-
-    <color name="tag_bg">#223044</color>
-    <color name="tag_text">#A9C7F0</color>
-    <color name="secondary_text">#B4BDCC</color>
-    <color name="hint_text">#8C97A8</color>
-    <color name="mastered">#7FD8C6</color>
-    <color name="delete_red">#FFB4AB</color>
-    <color name="star_text">#E8C070</color>
-    <color name="star_gold">#E8C070</color>
-
-    <color name="hero_gradient_start">#2C4B78</color>
-    <color name="hero_gradient_end">#0F5A4B</color>
+    <color name="card_bg">#22222B</color>
+    <color name="card_stroke">#3D3D4A</color>
+    <color name="tag_bg">#3A3A48</color>
+    <color name="tag_text">#DEDEE5</color>
+    <color name="secondary_text">#B3B6BD</color>
+    <color name="hint_text">#8E8E9C</color>
+    <color name="mastered">#8FC7A6</color>
+    <color name="delete_red">#E08C8C</color>
+    <color name="star_text">#D9B36C</color>
+    <color name="star_gold">#D9B36C</color>
+    <color name="hero_gradient_start">#23232C</color>
+    <color name="hero_gradient_end">#2E2E3A</color>
 </resources>

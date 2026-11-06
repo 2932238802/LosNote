@@ -4,7 +4,7 @@
     <!-- 形状 -->
     <style name="ShapeAppearance.LosNote.Card" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">18dp</item>
+        <item name="cornerSize">12dp</item>
     </style>
 
     <style name="ShapeAppearance.LosNote.Sheet" parent="">
@@ -17,14 +17,15 @@
 
     <style name="ShapeAppearanceOverlay.LosNote.Dialog" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">28dp</item>
+        <item name="cornerSize">14dp</item>
     </style>
 
     <!-- 卡片 -->
     <style name="Widget.LosNote.Card" parent="Widget.Material3.CardView.Elevated">
         <item name="cardBackgroundColor">@color/card_bg</item>
-        <item name="cardElevation">1dp</item>
-        <item name="strokeWidth">0dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/card_stroke</item>
         <item name="shapeAppearance">@style/ShapeAppearance.LosNote.Card</item>
     </style>
 
@@ -34,10 +35,10 @@
 
     <!-- 输入框 -->
     <style name="Widget.LosNote.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxCornerRadiusTopStart">14dp</item>
-        <item name="boxCornerRadiusTopEnd">14dp</item>
-        <item name="boxCornerRadiusBottomStart">14dp</item>
-        <item name="boxCornerRadiusBottomEnd">14dp</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
         <item name="hintTextColor">@color/hint_text</item>
     </style>
 
@@ -46,20 +47,20 @@
         <item name="boxBackgroundColor">?attr/colorSurfaceContainerHigh</item>
         <item name="boxStrokeWidth">0dp</item>
         <item name="boxStrokeWidthFocused">0dp</item>
-        <item name="boxCornerRadiusTopStart">26dp</item>
-        <item name="boxCornerRadiusTopEnd">26dp</item>
-        <item name="boxCornerRadiusBottomStart">26dp</item>
-        <item name="boxCornerRadiusBottomEnd">26dp</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
         <item name="hintTextColor">@color/hint_text</item>
         <item name="startIconTint">@color/hint_text</item>
     </style>
 
     <style name="Widget.LosNote.TextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">
         <item name="boxBackgroundColor">?attr/colorSurfaceContainerHigh</item>
-        <item name="boxCornerRadiusTopStart">16dp</item>
-        <item name="boxCornerRadiusTopEnd">16dp</item>
-        <item name="boxCornerRadiusBottomStart">16dp</item>
-        <item name="boxCornerRadiusBottomEnd">16dp</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
         <item name="hintTextColor">@color/hint_text</item>
     </style>
 

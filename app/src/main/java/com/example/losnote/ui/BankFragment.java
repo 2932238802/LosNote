@@ -149,7 +149,7 @@ public class BankFragment extends Fragment {
     /* ---------------- 设置菜单 / DeepSeek 设置 / AI 去重 ---------------- */
 
     private void showSettingsMenu() {
-        String version = "1.1";
+        String version = "1.2";
         try {
             android.content.pm.PackageInfo pi = requireContext().getPackageManager()
                     .getPackageInfo(requireContext().getPackageName(), 0);
