@@ -159,3 +159,20 @@ docker compose up -d --build
 
 镜像会在服务器上构建（会下载一次 npm 依赖，约 1–2 分钟）。构建完成后
 `curl http://127.0.0.1:8787/api/health` 应返回 `{"ok":true,...}`。
+
+## 已部署实例（2026-11-06）
+
+| 项 | 值 |
+| --- | --- |
+| 服务器 | `root@47.111.175.191`（Ubuntu 26.04，Docker 29.1.3 + compose 2.40.3） |
+| 代码目录 | `/opt/losnote-3dfb6e2`（发布包解压，非 git 仓库） |
+| 令牌 | 在服务器 `/opt/losnote-3dfb6e2/.env` 的 `LOSNOTE_TOKEN` 里（不要提交进仓库） |
+| 数据卷 | `losnote_losnote-data`（`COMPOSE_PROJECT_NAME=losnote` 固定，换目录不影响数据） |
+| 容器 | `losnote`，`0.0.0.0:8787->8787`，`restart: unless-stopped` |
+
+升级：把新发布包 scp 上去解压到新目录，复制旧 `.env`，在新目录 `docker compose up -d --build`
+（同名容器会替换；数据卷名由 `COMPOSE_PROJECT_NAME` 决定，不会丢）。
+
+**注意**：该云主机安全组是白名单，当前放行 `22 / 8080 / 8081 / 8082 / 8790`，
+所以要外网访问 LosNote 还需在云控制台安全组里放行 `8787`（或 80/443 + 反代）。
+放行前可以用 `ssh -L 8788:127.0.0.1:8787 root@47.111.175.191` 隧道先在本地看。
