@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: process.env.LOSNOTE_API || 'http://127.0.0.1:8899',
+        target: process.env.LOSNOTE_API || 'http://127.0.0.1:8787',
         changeOrigin: true,
       },
     },

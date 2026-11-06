@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer 换个自己的令牌" http://127.0.0.1:8787/api/
 ```bash
 cd web
 npm install
-npm run dev        # http://127.0.0.1:5174，/api 自动代理到 8899/8787
+npm run dev        # http://127.0.0.1:5174，/api 自动代理到 127.0.0.1:8787（可用 LOSNOTE_API 覆盖）
 ```
 
 生产构建 `npm run build`，产物 `web/dist` 由服务端直接托管（`/` 就是网页端）。
