@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AI 会自动把文件整理成题目/答案。整理后会进入预览，你可以勾选要导入的题目。"
+        android:textSize="13sp"
+        android:textColor="@color/hint_text"
+        android:layout_marginBottom="8dp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="统一栏目（如 CPP）">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_ai_category"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CPP"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

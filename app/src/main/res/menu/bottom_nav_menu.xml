@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_quiz"
+        android:icon="@drawable/ic_quiz"
+        android:title="@string/tab_quiz" />
+    <item
+        android:id="@+id/nav_daily"
+        android:icon="@drawable/ic_today"
+        android:title="@string/tab_daily" />
+    <item
+        android:id="@+id/nav_add"
+        android:icon="@drawable/ic_add"
+        android:title="@string/tab_add" />
+    <item
+        android:id="@+id/nav_bank"
+        android:icon="@drawable/ic_bank"
+        android:title="@string/tab_bank" />
+</menu>

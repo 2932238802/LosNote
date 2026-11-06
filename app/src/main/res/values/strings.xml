@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">LosNote</string>
+    <string name="tab_quiz">抽查</string>
+    <string name="tab_daily">今日</string>
+    <string name="tab_add">录入</string>
+    <string name="tab_bank">题库</string>
+</resources>

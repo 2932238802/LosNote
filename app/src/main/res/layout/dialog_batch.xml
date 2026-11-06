@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="统一栏目（如 CPP）">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_batch_category"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CPP"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="粘贴内容">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_batch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:minLines="8"
+                android:maxLines="16"
+                android:inputType="textMultiLine" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="12sp"
+            android:textColor="@color/hint_text"
+            android:text="两种格式自动识别：\n\n① 多行模式（推荐，适合大段答案）：\n用单独一行的 @@@ 分隔每题，每题第一行是名称，其余是定义。\n\n例：\n虚函数怎么实现的？\n通过虚函数表+虚表指针实现……\n@@@\nfinal 的作用？\n修饰类不可继承，修饰虚函数不可重写。\n\n② 单行模式：每行  名称 | 定义 | 栏目" />
+
+    </LinearLayout>
+</ScrollView>
