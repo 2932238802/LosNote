@@ -1,12 +1,13 @@
 :root {
-  --bg: #f6f7f9;
-  --panel: #ffffff;
-  --line: #e4e7ec;
-  --text: #1f2329;
-  --muted: #6b7280;
-  --accent: #2563eb;
-  --accent-soft: #eef4ff;
-  --danger: #dc2626;
+  /* 配色对齐 Theseus 设计令牌（石板灰 + 纸面 + 墨绿/赭金点缀） */
+  --bg: #e9e9ee;
+  --panel: #f7f7f9;
+  --line: #cfd0d8;
+  --text: #24242c;
+  --muted: #6e6e7d;
+  --accent: #3f3f52;
+  --accent-soft: #dedee5;
+  --danger: #9c4141;
   --radius: 12px;
 }
 
@@ -75,7 +76,7 @@ button.ghost:hover:not(:disabled) {
 
 button.danger {
   color: var(--danger);
-  border-color: #f3d2d2;
+  border-color: #e3c7c7;
 }
 
 input,
@@ -207,7 +208,7 @@ textarea {
 }
 
 .note-card:hover {
-  border-color: #c9d4ea;
+  border-color: #c6c6d1;
   box-shadow: 0 2px 10px rgba(31, 35, 41, 0.05);
 }
 
@@ -245,7 +246,7 @@ textarea {
 }
 
 .chip.plain {
-  background: #f1f3f5;
+  background: #ededf1;
   color: var(--muted);
 }
 
@@ -260,7 +261,7 @@ textarea {
 }
 
 .markdown pre {
-  background: #f7f8fa;
+  background: #f2f2f5;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
@@ -273,7 +274,7 @@ textarea {
 }
 
 .markdown :not(pre) > code {
-  background: #f1f3f5;
+  background: #ededf1;
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -293,7 +294,7 @@ textarea {
 }
 
 .markdown th {
-  background: #f7f8fa;
+  background: #f2f2f5;
 }
 
 .markdown img {
@@ -341,7 +342,7 @@ textarea {
 
 .progress-bar {
   height: 4px;
-  background: #eef0f3;
+  background: #e5e5ea;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -391,7 +392,7 @@ textarea {
   border-radius: 8px;
   padding: 12px;
   min-height: 80px;
-  background: #fcfcfd;
+  background: #fbfbfc;
 }
 
 /* ---------- 导入预览 ---------- */
