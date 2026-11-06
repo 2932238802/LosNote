@@ -91,7 +91,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { api } from '../api.js';
 import { plainSummary, humanDue } from '../markdown.js';
 import MarkdownView from '../components/MarkdownView.vue';
@@ -195,10 +195,17 @@ export default {
       }
     }
 
+    function onKeydown(e) {
+      if (e.key === 'Escape' && active.value) close();
+    }
+
     onMounted(() => {
       load();
       loadCategories();
+      window.addEventListener('keydown', onKeydown);
     });
+
+    onUnmounted(() => window.removeEventListener('keydown', onKeydown));
 
     return {
       items,

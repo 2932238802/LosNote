@@ -6,7 +6,8 @@ Java Android 间隔重复笔记/题库应用，支持 Markdown 渲染和 AI 辅�
 
 ```bash
 gradlew.bat assembleDebug            # 构建 debug APK
-gradlew.bat test                      # 单元测试（仅样板测试）
+gradlew.bat test                      # JVM 单元测试（含 Robolectric 的迁移/同步用例）
+gradlew.bat assembleDebug             # 或：scripts/test-android.sh（WSL 下自动配工具链）
 gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 ```
 
@@ -14,7 +15,7 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 - JDK 17–21（Java 25 与 Gradle 8.13 Kotlin DSL 不兼容）
 - `sourceCompatibility = targetCompatibility = JavaVersion.VERSION_11`（`app/build.gradle.kts:30`）
 - 阿里云 Maven 镜像优先（`settings.gradle.kts`）；`gradle.properties` 显式清空 `systemProp.*proxy*` 以覆盖全局代理设置
-- `local.properties` SDK 路径：`D:\sdk\AndroidPlatform`
+- `local.properties` SDK 路径：`D:\sdk\AndroidPlatform`（WSL 下用 `.toolchain/android-sdk`，该文件不入库）
 - 版本目录：`gradle/libs.versions.toml`
 
 ## 架构
@@ -77,4 +78,7 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 
 ## 测试
 
-仅两个样板测试（`ExampleUnitTest` + `ExampleInstrumentedTest`），无真实测试代码。
+- `app/src/test/java/com/example/losnote/data/DBHelperSyncTest.java`：Robolectric 跑真实 SQLite，覆盖 **v5→v6 迁移**（uuid/时间戳/dirty 回填、幂等重开、墓碑表与游标表）和**字段组 LWW**（内容组/SRS 组各自后写胜出、本地删除墓碑防复活、`markAllSynced` 不误清推送期间的新改动、`deleteAll` 留墓碑）。共 10 个用例。
+- Robolectric 需要 `android-all-instrumented` jar：`scripts/test-android.sh` 会自动下到 `.toolchain/robolectric-deps/`（已 gitignore）；`app/build.gradle.kts` 在该目录存在时把 `robolectric.dependency.dir` 指过去，不存在时走默认 `~/.m2`。
+- `ExampleUnitTest` / `ExampleInstrumentedTest` 是生成器自带的样板，保留未删。
+- 服务端：`cd server && npm test`（28 个用例）。

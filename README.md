@@ -100,7 +100,7 @@ docker compose up -d --build
 cd server && npm test       # node:test，SRS / 导入解析 / 同步（含墓碑），28 个用例
 ```
 
-安卓端 `./gradlew assembleDebug` 与 `./gradlew test` 均已实测通过；Docker 镜像也已实际起容器验证（`/api/health`、网页端 200、无令牌 401）。
+安卓端 `./gradlew assembleDebug` 与 `./gradlew test` 均已实测通过，其中 `DBHelperSyncTest` 用 Robolectric 跑真实 SQLite，覆盖 v5→v6 迁移与字段组 LWW（WSL/Linux 下直接 `scripts/test-android.sh`）；Docker 镜像也已实际起容器验证（`/api/health`、网页端 200、无令牌 401）。
 
 ## 已知限制
 

@@ -31,6 +31,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric 需要访问 res/manifest 资源
+            isIncludeAndroidResources = true
+            // 有本地预置的 robolectric jar 时优先用（HOME 只读的环境），否则走默认 ~/.m2
+            val roboDeps = rootProject.layout.projectDirectory.dir(".toolchain/robolectric-deps").asFile
+            if (roboDeps.isDirectory) {
+                all {
+                    it.systemProperty("robolectric.dependency.dir", roboDeps.absolutePath)
+                }
+            }
+        }
+    }
 }
 
 // 全局排除冲突的旧 annotations 包（prism4j 传递依赖引入，与 androidx 的 annotations 重复）
@@ -52,6 +66,7 @@ dependencies {
     implementation(libs.prism4j)
     annotationProcessor(libs.prism4j.bundler)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }

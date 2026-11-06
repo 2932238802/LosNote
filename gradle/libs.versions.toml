@@ -11,6 +11,7 @@ recyclerview = "1.4.0"
 fragment = "1.8.5"
 markwon = "4.6.2"
 prism4j = "2.0.0"
+robolectric = "4.14.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -28,6 +29,7 @@ markwon-strikethrough = { group = "io.noties.markwon", name = "ext-strikethrough
 markwon-syntax = { group = "io.noties.markwon", name = "syntax-highlight", version.ref = "markwon" }
 prism4j = { group = "io.noties", name = "prism4j", version.ref = "prism4j" }
 prism4j-bundler = { group = "io.noties", name = "prism4j-bundler", version.ref = "prism4j" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
