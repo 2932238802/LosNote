@@ -97,7 +97,7 @@ docker compose up -d --build
 ## 测试
 
 ```bash
-cd server && npm test       # node:test：SRS / 导入解析 / 同步（含墓碑）/ REST 路由集成，38 个用例
+cd server && npm test       # node:test：SRS / 导入解析 / 同步（含墓碑）/ REST 路由集成，39 个用例
 ```
 
 网页端可用真实浏览器跑一遍（需要本地有 Playwright 的 Chromium，见 `web/e2e/README.md`）：

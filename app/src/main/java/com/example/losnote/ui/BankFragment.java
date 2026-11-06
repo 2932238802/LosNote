@@ -558,48 +558,123 @@ public class BankFragment extends Fragment {
                 .show();
     }
 
+    /** 生成 v2 备份 JSON（字段与网页端 /api/export 一致），抽出来便于单测。 */
+    @NonNull
+    static String buildBackupJson(@NonNull DBHelper db) throws Exception {
+        List<Note> all = db.queryAll();
+        JSONArray arr = new JSONArray();
+        for (Note n : all) {
+            JSONObject o = new JSONObject();
+            o.put("uuid", n.uuid == null ? "" : n.uuid);
+            o.put("name", n.name);
+            o.put("definition", n.definition == null ? "" : n.definition);
+            o.put("category", n.category == null ? "" : n.category);
+            o.put("createdAt", n.createdAt);
+            o.put("mastery", n.mastery);
+            o.put("intervalDays", n.intervalDays);
+            o.put("easeFactor", n.easeFactor);
+            o.put("reviewCount", n.reviewCount);
+            o.put("nextReview", n.nextReview);
+            o.put("lastReview", n.lastReview);
+            o.put("stars", n.stars);
+            arr.put(o);
+        }
+        JSONArray logs = new JSONArray();
+        for (DailyLog d : db.queryAllDailyLogs(10000)) {
+            JSONObject o = new JSONObject();
+            o.put("uuid", d.uuid == null ? "" : d.uuid);
+            o.put("content", d.content);
+            o.put("createdAt", d.createdAt);
+            logs.put(o);
+        }
+        JSONObject root = new JSONObject();
+        root.put("version", 2);
+        root.put("exportedAt", System.currentTimeMillis());
+        root.put("reviewHistoryIncluded", false);
+        root.put("notes", arr);
+        root.put("dailyLogs", logs);
+        return root.toString(2);
+    }
+
+    /**
+     * 导入备份 JSON，返回 {题目数, 足迹数}。
+     * v2 保留 uuid 与完整 SRS 进度（网页端导出的文件走这条），v1 只有基础字段。
+     */
+    @NonNull
+    static int[] importBackupJson(@NonNull DBHelper db, @NonNull String json) throws Exception {
+        JSONObject root = new JSONObject(json);
+        int version = root.optInt("version", 1);
+        JSONArray arr = root.getJSONArray("notes");
+        int noteCount = 0;
+        if (version >= 2) {
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                String name = o.optString("name", "").trim();
+                if (name.isEmpty()) {
+                    continue;
+                }
+                Note n = new Note(name, o.optString("definition", ""),
+                        emptyTo(o.optString("category", ""), "未分类"));
+                n.uuid = emptyTo(o.optString("uuid", ""), null);
+                n.createdAt = o.optLong("createdAt", System.currentTimeMillis());
+                n.mastery = o.optInt("mastery", 0);
+                n.intervalDays = o.optInt("intervalDays", 0);
+                n.easeFactor = o.optInt("easeFactor", 250);
+                n.reviewCount = o.optInt("reviewCount", 0);
+                n.nextReview = o.optLong("nextReview", 0);
+                n.lastReview = o.optLong("lastReview", 0);
+                n.stars = o.optInt("stars", 0);
+                if (db.importNote(n) > 0) {
+                    noteCount++;
+                }
+            }
+        } else {
+            List<Note> notes = new ArrayList<>();
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                String name = o.optString("name", "").trim();
+                if (name.isEmpty()) {
+                    continue;
+                }
+                Note n = new Note(name, o.optString("definition", ""),
+                        emptyTo(o.optString("category", ""), "未分类"));
+                n.mastery = o.optInt("mastery", 0);
+                notes.add(n);
+            }
+            noteCount = notes.isEmpty() ? 0 : db.insertBatch(notes);
+        }
+        int logCount = 0;
+        JSONArray logs = root.optJSONArray("dailyLogs");
+        if (logs != null) {
+            for (int i = 0; i < logs.length(); i++) {
+                JSONObject o = logs.getJSONObject(i);
+                String content = o.optString("content", "").trim();
+                if (content.isEmpty()) {
+                    continue;
+                }
+                DailyLog d = new DailyLog(0L, content, o.optLong("createdAt", System.currentTimeMillis()));
+                d.uuid = emptyTo(o.optString("uuid", ""), null);
+                if (db.importDailyLog(d) > 0) {
+                    logCount++;
+                }
+            }
+        }
+        return new int[]{noteCount, logCount};
+    }
+
     private void writeExport(Uri uri) {
         try {
-            List<Note> all = db.queryAll();
-            JSONArray arr = new JSONArray();
-            for (Note n : all) {
-                JSONObject o = new JSONObject();
-                o.put("uuid", n.uuid == null ? "" : n.uuid);
-                o.put("name", n.name);
-                o.put("definition", n.definition == null ? "" : n.definition);
-                o.put("category", n.category == null ? "" : n.category);
-                o.put("createdAt", n.createdAt);
-                o.put("mastery", n.mastery);
-                o.put("intervalDays", n.intervalDays);
-                o.put("easeFactor", n.easeFactor);
-                o.put("reviewCount", n.reviewCount);
-                o.put("nextReview", n.nextReview);
-                o.put("lastReview", n.lastReview);
-                o.put("stars", n.stars);
-                arr.put(o);
-            }
-            JSONArray logs = new JSONArray();
-            for (DailyLog d : db.queryAllDailyLogs(10000)) {
-                JSONObject o = new JSONObject();
-                o.put("uuid", d.uuid == null ? "" : d.uuid);
-                o.put("content", d.content);
-                o.put("createdAt", d.createdAt);
-                logs.put(o);
-            }
-            JSONObject root = new JSONObject();
-            root.put("version", 2);
-            root.put("exportedAt", System.currentTimeMillis());
-            root.put("reviewHistoryIncluded", false);
-            root.put("notes", arr);
-            root.put("dailyLogs", logs);
+            String json = buildBackupJson(db);
+            int noteCount = db.queryAll().size();
+            int logCount = db.queryAllDailyLogs(10000).size();
 
             OutputStream os = requireContext().getContentResolver().openOutputStream(uri);
             if (os != null) {
-                os.write(root.toString(2).getBytes(StandardCharsets.UTF_8));
+                os.write(json.getBytes(StandardCharsets.UTF_8));
                 os.close();
             }
-            Toast.makeText(getContext(), "已导出 " + all.size() + " 题（含复习进度）+ "
-                    + logs.length() + " 条足迹", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "已导出 " + noteCount + " 题（含复习进度）+ "
+                    + logCount + " 条足迹", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
@@ -619,63 +694,9 @@ public class BankFragment extends Fragment {
             }
             br.close();
 
-            JSONObject root = new JSONObject(sb.toString());
-            int version = root.optInt("version", 1);
-            JSONArray arr = root.getJSONArray("notes");
-            int noteCount = 0;
-            if (version >= 2) {
-                for (int i = 0; i < arr.length(); i++) {
-                    JSONObject o = arr.getJSONObject(i);
-                    String name = o.optString("name", "").trim();
-                    if (name.isEmpty()) {
-                        continue;
-                    }
-                    Note n = new Note(name, o.optString("definition", ""),
-                            emptyTo(o.optString("category", ""), "未分类"));
-                    n.uuid = emptyTo(o.optString("uuid", ""), null);
-                    n.createdAt = o.optLong("createdAt", System.currentTimeMillis());
-                    n.mastery = o.optInt("mastery", 0);
-                    n.intervalDays = o.optInt("intervalDays", 0);
-                    n.easeFactor = o.optInt("easeFactor", 250);
-                    n.reviewCount = o.optInt("reviewCount", 0);
-                    n.nextReview = o.optLong("nextReview", 0);
-                    n.lastReview = o.optLong("lastReview", 0);
-                    n.stars = o.optInt("stars", 0);
-                    if (db.importNote(n) > 0) {
-                        noteCount++;
-                    }
-                }
-            } else {
-                List<Note> notes = new ArrayList<>();
-                for (int i = 0; i < arr.length(); i++) {
-                    JSONObject o = arr.getJSONObject(i);
-                    String name = o.optString("name", "").trim();
-                    if (name.isEmpty()) {
-                        continue;
-                    }
-                    Note n = new Note(name, o.optString("definition", ""),
-                            emptyTo(o.optString("category", ""), "未分类"));
-                    n.mastery = o.optInt("mastery", 0);
-                    notes.add(n);
-                }
-                noteCount = notes.isEmpty() ? 0 : db.insertBatch(notes);
-            }
-            int logCount = 0;
-            JSONArray logs = root.optJSONArray("dailyLogs");
-            if (logs != null) {
-                for (int i = 0; i < logs.length(); i++) {
-                    JSONObject o = logs.getJSONObject(i);
-                    String content = o.optString("content", "").trim();
-                    if (content.isEmpty()) {
-                        continue;
-                    }
-                    DailyLog d = new DailyLog(0L, content, o.optLong("createdAt", System.currentTimeMillis()));
-                    d.uuid = emptyTo(o.optString("uuid", ""), null);
-                    if (db.importDailyLog(d) > 0) {
-                        logCount++;
-                    }
-                }
-            }
+            int[] counts = importBackupJson(db, sb.toString());
+            int noteCount = counts[0];
+            int logCount = counts[1];
             if (noteCount == 0 && logCount == 0) {
                 Toast.makeText(getContext(), "文件中没有有效数据（或已全部导入过）", Toast.LENGTH_SHORT).show();
                 return;
@@ -692,8 +713,6 @@ public class BankFragment extends Fragment {
     private static String emptyTo(String s, String fallback) {
         return s == null || s.trim().isEmpty() ? fallback : s;
     }
-
-    /* ---------------- 刷新与搜索 ---------------- */
 
     public void refreshOnShow() {
         if (db == null) {

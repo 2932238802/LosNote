@@ -70,6 +70,7 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 - SRS：`nextReview=0` = 未复习/立即可复习；`intervalDays=0` = 10 分钟后复习。到期查询条件：`nextReview <= now OR reviewCount == 0`。
 - AI 功能需先在设置中配好 API Key / Base URL / Model。支持 DeepSeek、Qwen、Custom。`AiConfig` 含 `webSearch` 开关。
 - AI 去重：先做本地标题归一化 + 编辑距离（相似度 ≥ 0.92）预筛选，再发候选组给 LLM。
+- 整库导出两端同源：网页端「设置 → 导出 JSON」走 `GET /api/export`（`notes.js: exportBackup()`），与安卓 `BankFragment.buildBackupJson()` 字段完全一致，可互相导入；导入/导出逻辑抽成了 `BankFragment.importBackupJson()` / `buildBackupJson()` 便于单测。
 - JSON 备份格式：v2 `{"version":2,"notes":[...],"dailyLogs":[...]}`，含 uuid 与完整 SRS 进度（`mastery/intervalDays/easeFactor/reviewCount/nextReview/lastReview/stars`）；导入时仍兼容 v1（只有 name/definition/category/mastery）。复习历史 `reviews` 不入备份（`reviewHistoryIncluded: false`）。
 - 云同步（v6）：本地删除 = 物理删 + `tombstones` 墓碑，推送时墓碑转成 `{uuid, deleted:true}`；查询层因此**不需要**加 `deleted=0` 过滤。游标存 `sync_state.last_seq`。字段级 last-write-wins：内容组（name/definition/category/createdAt/删除）看 `content_ts`，SRS 组（mastery/intervalDays/easeFactor/reviewCount/nextReview/lastReview/stars）看 `srs_ts`。
 - `AndroidManifest.xml` 设了 `android:usesCleartextTraffic="true"`，局域网 `http://IP:8787` 才能连；上公网请用 HTTPS 反代。
@@ -81,5 +82,6 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 - `app/src/test/java/com/example/losnote/data/DBHelperSyncTest.java`：Robolectric 跑真实 SQLite，覆盖 **v5→v6 迁移**（uuid/时间戳/dirty 回填、幂等重开、墓碑表与游标表）和**字段组 LWW**（内容组/SRS 组各自后写胜出、本地删除墓碑防复活、`markAllSynced` 不误清推送期间的新改动、`deleteAll` 留墓碑）。共 10 个用例。
 - Robolectric 需要 `android-all-instrumented` jar：`scripts/test-android.sh` 会自动下到 `.toolchain/robolectric-deps/`（已 gitignore）；`app/build.gradle.kts` 在该目录存在时把 `robolectric.dependency.dir` 指过去，不存在时走默认 `~/.m2`。
 - `ExampleUnitTest` / `ExampleInstrumentedTest` 是生成器自带的样板，保留未删。
-- 服务端：`cd server && npm test`（38 个用例）。`server/test/rest.test.js` 会真起一个服务进程（临时端口 + 临时库），覆盖令牌鉴权、CRUD、复习、导入解析/提交、AI 设置脱敏、同步增量与墓碑，以及**静态目录带 `..` 也要能托管**（曾因未归一化导致全站 403）。
-- 网页端：`web/e2e/crud.mjs`、`web/e2e/import.mjs` 是 Playwright 端到端脚本（真实 Chromium），覆盖登录、新建/编辑/删除、Markdown 表格渲染、Esc 关弹层、复习评分、竖线/`@@@` 两种导入格式、未配 AI key 的提示。跑法见 `web/e2e/README.md`。
+- 服务端：`cd server && npm test`（39 个用例）。`server/test/rest.test.js` 会真起一个服务进程（临时端口 + 临时库），覆盖令牌鉴权、CRUD、复习、导入解析/提交、AI 设置脱敏、同步增量与墓碑，以及**静态目录带 `..` 也要能托管**（曾因未归一化导致全站 403）。
+- 备份互通：`app/src/test/java/com/example/losnote/ui/BackupJsonTest.java` 用 Robolectric 验证「网页导出的 v2 JSON → 手机导入」SRS 不丢、uuid 保留、重复导入幂等、v1 老备份仍兼容。样例 `app/src/test/resources/server-backup-v2.json` 由服务端 `exportBackup()` 真跑生成，不是手写。
+- 网页端：`web/e2e/crud.mjs`、`web/e2e/import.mjs`、`web/e2e/export.mjs` 是 Playwright 端到端脚本（真实 Chromium），覆盖登录、新建/编辑/删除、Markdown 表格渲染、Esc 关弹层、复习评分、竖线/`@@@` 两种导入格式、未配 AI key 的提示，以及导出备份的文件名与 v2 字段契约。跑法见 `web/e2e/README.md`。

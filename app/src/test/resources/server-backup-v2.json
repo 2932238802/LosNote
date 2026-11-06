@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "exportedAt": "2026-11-06T10:25:11.252Z",
+  "exportedBy": "losnote-server",
+  "reviewHistoryIncluded": false,
+  "notes": [
+    {
+      "uuid": "44d199ad-c847-4138-965f-9b5de7677881",
+      "name": "闭包是什么",
+      "definition": "函数与其词法环境的组合\n\n| 特性 | 说明 |\n| --- | --- |\n| 捕获 | 外部变量 |",
+      "category": "JavaScript",
+      "createdAt": 1793960711251,
+      "mastery": 1,
+      "intervalDays": 4,
+      "easeFactor": 265,
+      "reviewCount": 1,
+      "nextReview": 1794306311252,
+      "lastReview": 1793960711252,
+      "stars": 3
+    },
+    {
+      "uuid": "b88b7462-4435-439c-8c20-e1e0be3e1d8f",
+      "name": "TCP 三次握手",
+      "definition": "SYN → SYN+ACK → ACK",
+      "category": "网络",
+      "createdAt": 1793960711252,
+      "mastery": 0,
+      "intervalDays": 0,
+      "easeFactor": 250,
+      "reviewCount": 0,
+      "nextReview": 0,
+      "lastReview": 0,
+      "stars": 0
+    }
+  ],
+  "dailyLogs": [
+    {
+      "uuid": "8ca6aba3-8b28-4399-bc1d-9ebd7a13aa41",
+      "content": "今天整理了 2 条笔记",
+      "createdAt": 1793960711252
+    }
+  ]
+}
