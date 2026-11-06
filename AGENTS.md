@@ -82,6 +82,7 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 - `app/src/test/java/com/example/losnote/data/DBHelperSyncTest.java`：Robolectric 跑真实 SQLite，覆盖 **v5→v6 迁移**（uuid/时间戳/dirty 回填、幂等重开、墓碑表与游标表）和**字段组 LWW**（内容组/SRS 组各自后写胜出、本地删除墓碑防复活、`markAllSynced` 不误清推送期间的新改动、`deleteAll` 留墓碑）。共 10 个用例。
 - Robolectric 需要 `android-all-instrumented` jar：`scripts/test-android.sh` 会自动下到 `.toolchain/robolectric-deps/`（已 gitignore）；`app/build.gradle.kts` 在该目录存在时把 `robolectric.dependency.dir` 指过去，不存在时走默认 `~/.m2`。
 - `ExampleUnitTest` / `ExampleInstrumentedTest` 是生成器自带的样板，保留未删。
-- 服务端：`cd server && npm test`（39 个用例）。`server/test/rest.test.js` 会真起一个服务进程（临时端口 + 临时库），覆盖令牌鉴权、CRUD、复习、导入解析/提交、AI 设置脱敏、同步增量与墓碑，以及**静态目录带 `..` 也要能托管**（曾因未归一化导致全站 403）。
+- 服务端：`cd server && npm test`（40 个用例）。`server/test/rest.test.js` 会真起一个服务进程（临时端口 + 临时库），覆盖令牌鉴权、CRUD、复习、导入解析/提交、AI 设置脱敏、同步增量与墓碑，以及**静态目录带 `..` 也要能托管**（曾因未归一化导致全站 403）。
 - 备份互通：`app/src/test/java/com/example/losnote/ui/BackupJsonTest.java` 用 Robolectric 验证「网页导出的 v2 JSON → 手机导入」SRS 不丢、uuid 保留、重复导入幂等、v1 老备份仍兼容。样例 `app/src/test/resources/server-backup-v2.json` 由服务端 `exportBackup()` 真跑生成，不是手写。
-- 网页端：`web/e2e/crud.mjs`、`web/e2e/import.mjs`、`web/e2e/export.mjs` 是 Playwright 端到端脚本（真实 Chromium），覆盖登录、新建/编辑/删除、Markdown 表格渲染、Esc 关弹层、复习评分、竖线/`@@@` 两种导入格式、未配 AI key 的提示，以及导出备份的文件名与 v2 字段契约。跑法见 `web/e2e/README.md`。
+- 备份导入（网页端）：`POST /api/import/backup` → `notes.js: importBackup()`，文件为准不做 LWW，保留 uuid 与 SRS，重复 uuid 覆盖、足迹按 uuid 去重；`ImportView` 选到备份文件（有 `version` / `dailyLogs` / 题里有 uuid 或 SRS 字段）时直接走它，普通 `{notes}` 仍进预览。
+- 网页端：`web/e2e/crud.mjs`、`web/e2e/import.mjs`、`web/e2e/export.mjs` 是 Playwright 端到端脚本（真实 Chromium），覆盖登录、新建/编辑/删除、Markdown 表格渲染、Esc 关弹层、复习评分、竖线/`@@@` 两种导入格式、未配 AI key 的提示，以及导出备份的文件名与 v2 字段契约、备份文件按进度导入（`web/e2e/fixtures/backup-v2.json`）。跑法见 `web/e2e/README.md`。

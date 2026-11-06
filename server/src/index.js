@@ -30,6 +30,7 @@ import {
   createDailyLog,
   deleteDailyLog,
   exportBackup,
+  importBackup,
 } from './notes.js';
 import { pull, push } from './sync.js';
 import { aiRoutes } from './ai.js';
@@ -179,6 +180,11 @@ route('POST', /^\/api\/import\/commit$/, async ({ req }) => {
     }))
   );
   return { count: created.length, items: created };
+});
+
+route('POST', /^\/api\/import\/backup$/, async ({ req }) => {
+  const body = await readJson(req);
+  return importBackup(db, body);
 });
 
 route('GET', /^\/api\/sync$/, ({ url }) =>

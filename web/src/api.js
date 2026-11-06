@@ -72,6 +72,7 @@ export const api = {
 
   parse: (text, category) => request('POST', '/api/import/parse', { text, category }),
   commit: (notes, category) => request('POST', '/api/import/commit', { notes, category }),
+  importBackup: (payload) => request('POST', '/api/import/backup', payload),
 
   pull: (since, limit = 500) =>
     request('GET', `/api/sync?since=${encodeURIComponent(since)}&limit=${limit}`),

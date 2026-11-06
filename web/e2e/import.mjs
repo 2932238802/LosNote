@@ -64,6 +64,22 @@ const hits = await page.locator('.note-card').count();
 if (hits >= 1) ok('题库里搜到导入的题', String(hits));
 else bad('搜导入的题', '0 条');
 
+// 备份文件：带 uuid/SRS 的 v2 JSON 应走「保留进度」的导入，而不是变成预览再提交
+await page.click('.tabs button:has-text("导入")');
+await page.waitForSelector('input[type=file]');
+await page.setInputFiles('input[type=file]', new URL('./fixtures/backup-v2.json', import.meta.url).pathname);
+await page.waitForTimeout(1500);
+const backupNotice = await page.textContent('body');
+if (/已按备份导入 1 题、1 条足迹/.test(backupNotice)) ok('备份文件按进度导入', '提示保留复习进度');
+else bad('备份文件按进度导入', backupNotice.replace(/\s+/g, ' ').slice(0, 80));
+
+await page.click('.tabs button:has-text("题库")');
+await page.fill('input[placeholder="搜索题目或答案…"]', '备份导入的题');
+await page.waitForTimeout(600);
+const backupHits = await page.locator('.note-card').count();
+if (backupHits >= 1) ok('备份里的题出现在题库', String(backupHits));
+else bad('备份里的题出现在题库', '0 条');
+
 // AI 整理：没配 key 时应该给友好错误，而不是白屏
 await page.click('.tabs button:has-text("导入")');
 await page.fill('textarea', '随便一段笔记，用来测试 AI 整理');

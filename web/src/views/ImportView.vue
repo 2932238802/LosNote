@@ -63,6 +63,14 @@
 import { ref } from 'vue';
 import { api } from '../api.js';
 
+/** 备份文件的特征：带 version、足迹，或题目里带 uuid / SRS 字段 */
+function looksLikeBackup(data) {
+  if (data.version || Array.isArray(data.dailyLogs)) return true;
+  return (data.notes || []).some(
+    (n) => n && (n.uuid || n.reviewCount != null || n.intervalDays != null || n.stars != null)
+  );
+}
+
 export default {
   name: 'ImportView',
   setup() {
@@ -84,21 +92,46 @@ export default {
       reset();
       const raw = await file.text();
       if (file.name.toLowerCase().endsWith('.json')) {
+        let data;
         try {
-          const data = JSON.parse(raw);
-          const list = Array.isArray(data) ? data : data.notes;
-          if (!Array.isArray(list)) throw new Error('JSON 里没有 notes 数组');
-          preview.value = list
-            .map((o) => ({
-              name: String(o?.name || '').trim(),
-              definition: String(o?.definition || ''),
-              category: String(o?.category || category.value || '未分类').trim(),
-            }))
-            .filter((o) => o.name);
-          notice.value = `已从 ${file.name} 读入 ${preview.value.length} 条`;
+          data = JSON.parse(raw);
         } catch (e) {
           error.value = `JSON 解析失败：${e.message}`;
+          event.target.value = '';
+          return;
         }
+        // 备份文件（v1/v2）：直接按备份导入，保住 uuid 与复习进度。
+        // 走预览会丢 SRS，导回来等于把学过的东西清零。
+        if (data && !Array.isArray(data) && Array.isArray(data.notes) && looksLikeBackup(data)) {
+          busy.value = 'backup';
+          try {
+            const res = await api.importBackup(data);
+            notice.value = `已按备份导入 ${res.notes} 题、${res.dailyLogs} 条足迹（保留复习进度）${
+              res.skipped ? `，跳过 ${res.skipped} 条` : ''
+            }`;
+            preview.value = [];
+          } catch (e) {
+            error.value = `备份导入失败：${e.message}`;
+          } finally {
+            busy.value = '';
+          }
+          event.target.value = '';
+          return;
+        }
+        const list = Array.isArray(data) ? data : data.notes;
+        if (!Array.isArray(list)) {
+          error.value = 'JSON 里没有 notes 数组';
+          event.target.value = '';
+          return;
+        }
+        preview.value = list
+          .map((o) => ({
+            name: String(o?.name || '').trim(),
+            definition: String(o?.definition || ''),
+            category: String(o?.category || category.value || '未分类').trim(),
+          }))
+          .filter((o) => o.name);
+        notice.value = `已从 ${file.name} 读入 ${preview.value.length} 条`;
       } else {
         text.value = raw;
         notice.value = `已把 ${file.name} 的内容放进输入框，点「批量解析」`;

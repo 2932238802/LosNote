@@ -92,12 +92,16 @@ docker compose up -d --build
 - 兼容导入旧版 v1（只有 `name/definition/category/mastery`）
 - `uuid` 相同视为同一条，重复导入不会产生副本
 - 导入后标记为待推送，联网即上传云端
+- **两端都能导出 / 导入**：网页「设置 → 导出 JSON」下载的文件与手机导出的格式完全一致，
+  在网页「导入 → 从文件导入」选中它，会走 `POST /api/import/backup` 按备份导入 —— 保留 `uuid`
+  与完整 SRS 进度（星星、复习次数、间隔、下次复习时间），**不会**把学过的东西清零。
+  普通 `{notes:[...]}` 的 JSON 仍走预览 + 提交的老路。
 - 复习历史（`reviews` 表）不进备份，只影响「今日已复习」统计
 
 ## 测试
 
 ```bash
-cd server && npm test       # node:test：SRS / 导入解析 / 同步（含墓碑）/ REST 路由集成，39 个用例
+cd server && npm test       # node:test：SRS / 导入解析 / 备份导入 / 同步（含墓碑）/ REST 路由集成，40 个用例
 ```
 
 网页端可用真实浏览器跑一遍（需要本地有 Playwright 的 Chromium，见 `web/e2e/README.md`）：

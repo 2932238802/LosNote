@@ -242,6 +242,75 @@ export function exportBackup(db, now = Date.now()) {
   };
 }
 
+/**
+ * 备份导入（v1 / v2，文件为准，不做 LWW）——语义与安卓 BankFragment.importBackupJson 一致：
+ * - 有 uuid 就用文件的 uuid（否则网页导入后再同步会跟手机里的同一题对不上，凭空多出一条）
+ * - SRS 进度（stars / 复习次数 / 间隔 / 难度因子 / 下次复习）原样保留
+ * - 同一 uuid 重复导入是覆盖，不是新增
+ * - 足迹按 uuid 去重，重复的跳过
+ */
+export function importBackup(db, payload, now = Date.now()) {
+  const notes = Array.isArray(payload && payload.notes) ? payload.notes : [];
+  const logs = Array.isArray(payload && payload.dailyLogs) ? payload.dailyLogs : [];
+  const result = { notes: 0, dailyLogs: 0, skipped: 0 };
+
+  for (const raw of notes) {
+    const name = String((raw && raw.name) || '').trim();
+    if (!name) {
+      result.skipped += 1;
+      continue;
+    }
+    const uuid =
+      typeof raw.uuid === 'string' && raw.uuid.trim() ? raw.uuid.trim() : randomUUID();
+    const prev = getNoteRow(db, uuid);
+    const base = prev ? rowToNote(prev) : null;
+    writeRow(db, {
+      uuid,
+      name,
+      definition: String(raw.definition ?? ''),
+      category: String(raw.category ?? '').trim(),
+      createdAt: NUM(raw.createdAt, base ? base.createdAt : now) || now,
+      mastery: NUM(raw.mastery, base ? base.mastery : 0),
+      intervalDays: NUM(raw.intervalDays, base ? base.intervalDays : 0),
+      easeFactor: NUM(raw.easeFactor, base ? base.easeFactor : 250) || 250,
+      reviewCount: NUM(raw.reviewCount, base ? base.reviewCount : 0),
+      nextReview: NUM(raw.nextReview, base ? base.nextReview : 0),
+      lastReview: NUM(raw.lastReview, base ? base.lastReview : 0),
+      stars: NUM(raw.stars, base ? base.stars : 0),
+      contentTs: now,
+      srsTs: now,
+      deleted: false,
+      seq: bumpSeq(db),
+    });
+    result.notes += 1;
+  }
+
+  for (const raw of logs) {
+    const content = String((raw && raw.content) || '').trim();
+    if (!content) {
+      result.skipped += 1;
+      continue;
+    }
+    const uuid =
+      typeof raw.uuid === 'string' && raw.uuid.trim() ? raw.uuid.trim() : randomUUID();
+    if (db.prepare('SELECT uuid FROM daily_logs WHERE uuid = ?').get(uuid)) {
+      result.skipped += 1;
+      continue;
+    }
+    writeDailyLog(db, {
+      uuid,
+      content,
+      createdAt: NUM(raw.createdAt, now) || now,
+      updatedTs: now,
+      deleted: false,
+      seq: bumpSeq(db),
+    });
+    result.dailyLogs += 1;
+  }
+
+  return result;
+}
+
 /** 列表 + 搜索 + 栏目筛选（不含墓碑） */
 export function listNotes(db, { q = '', category = '', limit = 200, offset = 0 } = {}) {
   const where = ['deleted = 0'];

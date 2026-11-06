@@ -262,6 +262,59 @@ test('整库导出：v2 格式、含足迹、不含墓碑、字段对齐安卓',
   assert.deepEqual(Object.keys(log).sort(), ['content', 'createdAt', 'uuid'].sort());
 });
 
+test('备份导入：保留 uuid 与复习进度，重复导入是覆盖而非新增', async () => {
+  const uuid = '11111111-2222-3333-4444-555555555555';
+  const payload = {
+    version: 2,
+    notes: [
+      {
+        uuid,
+        name: '备份回来的题',
+        definition: '**重点** 内容',
+        category: '备份',
+        createdAt: 1700000000000,
+        mastery: 1,
+        intervalDays: 4,
+        easeFactor: 265,
+        reviewCount: 1,
+        nextReview: Date.now() + 86400000,
+        lastReview: Date.now() - 1000,
+        stars: 3,
+      },
+      { name: '   ', definition: '没名字的脏数据' },
+    ],
+    dailyLogs: [
+      { uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', content: '备份里的足迹', createdAt: 1700000000000 },
+    ],
+  };
+
+  const first = await json('/api/import/backup', { method: 'POST', body: payload });
+  assert.equal(first.status, 200);
+  assert.deepEqual(first.payload, { notes: 1, dailyLogs: 1, skipped: 1 });
+
+  const got = await json('/api/notes/' + uuid);
+  assert.equal(got.status, 200);
+  assert.equal(got.payload.note.name, '备份回来的题');
+  assert.equal(got.payload.note.stars, 3, '星星不能丢');
+  assert.equal(got.payload.note.reviewCount, 1);
+  assert.equal(got.payload.note.intervalDays, 4);
+  assert.equal(got.payload.note.easeFactor, 265);
+  assert.equal(got.payload.note.category, '备份');
+
+  // 再导一次：题目仍只有一条（覆盖），足迹按 uuid 跳过
+  const second = await json('/api/import/backup', { method: 'POST', body: payload });
+  assert.deepEqual(second.payload, { notes: 1, dailyLogs: 0, skipped: 2 });
+
+  const list = await json('/api/notes?category=' + encodeURIComponent('备份'));
+  assert.equal(list.payload.total, 1, '重复导入不该多出一条');
+
+  // 导出的备份能被自己再导入（两端同源）
+  const exp = await json('/api/export');
+  const roundTrip = await json('/api/import/backup', { method: 'POST', body: exp.payload });
+  assert.equal(roundTrip.status, 200);
+  assert.equal(roundTrip.payload.notes, exp.payload.notes.length);
+});
+
 test('AI 设置：只回 hasKey，不回显密钥', async () => {
   const saved = await json('/api/settings/ai', {
     method: 'PUT',

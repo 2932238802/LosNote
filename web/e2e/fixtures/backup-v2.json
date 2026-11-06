@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "exportedAt": "2026-11-06T10:00:00.000Z",
+  "exportedBy": "losnote-android",
+  "reviewHistoryIncluded": false,
+  "notes": [
+    {
+      "uuid": "9f8e7d6c-5b4a-4321-9876-0fedcba98765",
+      "name": "备份导入的题",
+      "definition": "从手机导出的备份，**星星和复习进度都要在**",
+      "category": "备份测试",
+      "createdAt": 1700000000000,
+      "mastery": 1,
+      "intervalDays": 4,
+      "easeFactor": 265,
+      "reviewCount": 1,
+      "nextReview": 1900000000000,
+      "lastReview": 1700000000000,
+      "stars": 3
+    }
+  ],
+  "dailyLogs": [
+    { "uuid": "0a1b2c3d-4e5f-4a6b-8c9d-0e1f2a3b4c5d", "content": "备份里带的足迹", "createdAt": 1700000000000 }
+  ]
+}
