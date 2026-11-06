@@ -101,3 +101,24 @@ docker compose up -d --build      # 重建镜像，数据卷不受影响
 | 网页白屏 | `curl -I https://域名/assets/xxx.js` 看静态资源是否 200；看 Caddy 日志 |
 | 同步一直 0 条 | 手机上没配置成功，或在「云同步」里没点保存；`/api/health` 先确认连通 |
 | 服务器日志 | `docker compose logs -f --tail=100` |
+
+## 没有 git / 不能推送时：用发布包部署
+
+仓库里的 `scripts/make-release.sh` 会打一个只含部署所需文件的小包（约 50 KB），
+拷到服务器解压即可，不需要 clone，也不依赖仓库是否已推送：
+
+```bash
+# 本机（WSL）
+bash scripts/make-release.sh            # 生成 dist/losnote-server-<commit>.tar.gz
+
+# 传到服务器
+scp dist/losnote-server-*.tar.gz user@你的服务器:~/
+
+# 服务器上（已装 Docker）
+tar xzf losnote-server-*.tar.gz && cd losnote-*/
+echo "LOSNOTE_TOKEN=$(head -c 24 /dev/urandom | base64 | tr -d '/+=' | head -c 32)" > .env
+docker compose up -d --build
+```
+
+镜像会在服务器上构建（会下载一次 npm 依赖，约 1–2 分钟）。构建完成后
+`curl http://127.0.0.1:8787/api/health` 应返回 `{"ok":true,...}`。
