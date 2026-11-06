@@ -46,6 +46,7 @@ npm run dev        # http://127.0.0.1:5174，/api 自动代理到 127.0.0.1:8787
 ```
 
 需要在 `local.properties` 里指到本机 Android SDK（该文件不入库）。
+仓库已用 JDK 21 + AGP 8.13 实测构建通过，产物 `app/build/outputs/apk/debug/app-debug.apk`（约 6.9 MB，minSdk 24）。
 
 装好后：**题库 → 右上「设置」→「云同步」**，填服务器地址（如 `http://192.168.1.10:8787`）和令牌，点「保存并同步」。之后每次打开 App 会静默同步一次。
 
@@ -57,6 +58,8 @@ docker compose up -d --build
 ```
 
 `docker-compose.yml` 默认只监听 `127.0.0.1:8787`，请用 Caddy/Nginx 反代并配 HTTPS（手机端尤其需要，明文 HTTP 只在局域网方便调试）。数据在命名卷 `losnote-data` 里。
+
+完整的部署、HTTPS、备份恢复、排错步骤见 [docs/deploy.md](docs/deploy.md)。
 
 ## 同步机制
 
@@ -94,10 +97,10 @@ docker compose up -d --build
 ## 测试
 
 ```bash
-cd server && npm test       # node:test，SRS / 导入解析 / 同步（含墓碑）
+cd server && npm test       # node:test，SRS / 导入解析 / 同步（含墓碑），28 个用例
 ```
 
-安卓端本机没有 JDK/SDK 时无法编译，改动只做了语法与布局 XML 校验。
+安卓端 `./gradlew assembleDebug` 与 `./gradlew test` 均已实测通过；Docker 镜像也已实际起容器验证（`/api/health`、网页端 200、无令牌 401）。
 
 ## 已知限制
 
