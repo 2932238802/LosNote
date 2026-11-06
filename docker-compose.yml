@@ -1,0 +1,18 @@
+services:
+  losnote:
+    build: .
+    image: losnote:latest
+    container_name: losnote
+    restart: unless-stopped
+    ports:
+      # 只监听回环更安全：前面用 Caddy / Nginx 反代并配 HTTPS
+      # 若直接对外暴露，改成 "8787:8787"
+      - "127.0.0.1:8787:8787"
+    environment:
+      LOSNOTE_TOKEN: ${LOSNOTE_TOKEN:?需要在 .env 里设置 LOSNOTE_TOKEN}
+      LOSNOTE_DB: /data/losnote.db
+    volumes:
+      - losnote-data:/data
+
+volumes:
+  losnote-data:

@@ -36,14 +36,27 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 
 | 文件 | 作用 |
 |---|---|
-| `data/DBHelper.java` | SQLite 单例，`notes` + `reviews` + `daily_logs` 表，v5 含今日足迹 |
+| `data/DBHelper.java` | SQLite 单例，`notes` + `reviews` + `daily_logs` + `tombstones` + `sync_state`，**v6** 含云同步字段 |
 | `data/Note.java` | POJO，`easeFactor` 存 int × 100 |
 | `data/DailyLog.java` | 今日足迹 POJO（内容 + 创建时间） |
 | `data/Srs.java` | SM-2 变体，三档评分：`AGAIN=0` / `GOOD=1` / `EASY=2` |
 | `ai/AiConfig.java` | 配置存于 SharedPreferences `"ai_settings"`，支持 `webSearch` 标记 |
 | `ai/AiClient.java` | OpenAI 兼容 Chat Completions |
+| `sync/SyncConfig.java` | 服务器地址 + 令牌，存 SharedPreferences `"sync_settings"` |
+| `sync/SyncClient.java` | 双向增量同步（push/pull `/api/sync`，墓碑表示删除） |
+| `sync/SyncResult.java` | 同步结果计数 + 中文文案 |
 | `ui/MarkdownRenderer.java` | Markwon + Prism4j + 表格 + 删除线 |
 | `ui/PrismGrammar.java` | `@PrismBundle` → 编译生成 `GrammarLocatorImpl` |
+
+## 仓库结构（三端）
+
+| 目录 | 说明 |
+|---|---|
+| `app/` | Android 客户端（Java，本目录构建） |
+| `server/` | Node ≥22 后端，零依赖（`node:http` + `node:sqlite`），SQLite 单文件 |
+| `web/` | Vue 3 + Vite 网页端，构建产物 `web/dist` 由 server 静态托管 |
+| `docs/sync-design.md` | 同步协议、字段组、v5→v6 迁移说明 |
+| `Dockerfile` / `docker-compose.yml` | 一键部署（多阶段构建 web，再打运行时镜像） |
 
 ## 注意点
 
@@ -56,7 +69,10 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 - SRS：`nextReview=0` = 未复习/立即可复习；`intervalDays=0` = 10 分钟后复习。到期查询条件：`nextReview <= now OR reviewCount == 0`。
 - AI 功能需先在设置中配好 API Key / Base URL / Model。支持 DeepSeek、Qwen、Custom。`AiConfig` 含 `webSearch` 开关。
 - AI 去重：先做本地标题归一化 + 编辑距离（相似度 ≥ 0.92）预筛选，再发候选组给 LLM。
-- JSON 备份格式：`{"version":1,"notes":[...]}`。
+- JSON 备份格式：v2 `{"version":2,"notes":[...],"dailyLogs":[...]}`，含 uuid 与完整 SRS 进度（`mastery/intervalDays/easeFactor/reviewCount/nextReview/lastReview/stars`）；导入时仍兼容 v1（只有 name/definition/category/mastery）。复习历史 `reviews` 不入备份（`reviewHistoryIncluded: false`）。
+- 云同步（v6）：本地删除 = 物理删 + `tombstones` 墓碑，推送时墓碑转成 `{uuid, deleted:true}`；查询层因此**不需要**加 `deleted=0` 过滤。游标存 `sync_state.last_seq`。字段级 last-write-wins：内容组（name/definition/category/createdAt/删除）看 `content_ts`，SRS 组（mastery/intervalDays/easeFactor/reviewCount/nextReview/lastReview/stars）看 `srs_ts`。
+- `AndroidManifest.xml` 设了 `android:usesCleartextTraffic="true"`，局域网 `http://IP:8787` 才能连；上公网请用 HTTPS 反代。
+- 同步入口：题库页右上「设置」→「云同步」，填地址与令牌。`MainActivity.onStart()` 会自动同步一次。
 - `AndroidManifest.xml` 已声明 `INTERNET` 权限。
 
 ## 测试

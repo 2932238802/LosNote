@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.example.losnote.data.Note;
+import com.example.losnote.sync.SyncClient;
+import com.example.losnote.sync.SyncConfig;
 import com.example.losnote.ui.AddFragment;
 import com.example.losnote.ui.BankFragment;
 import com.example.losnote.ui.DailyFragment;
@@ -37,6 +39,34 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView nav = findViewById(R.id.bottom_nav);
         nav.setSelectedItemId(R.id.nav_quiz);
         nav.setOnItemSelectedListener(this::onNavItemSelected);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        autoSync();
+    }
+
+    /** 来到前台时静默同步一次；真有变化才刷新界面，没配置就直接跳过 */
+    private void autoSync() {
+        if (!SyncConfig.load(this).isConfigured()) {
+            return;
+        }
+        SyncClient.syncAsync(this, result -> {
+            if (result != null && result.ok && result.changedAnything()) {
+                refreshCurrentFragment();
+            }
+        });
+    }
+
+    private void refreshCurrentFragment() {
+        if (current == quizFragment && quizFragment.isAdded()) {
+            ((QuizFragment) quizFragment).refreshOnShow();
+        } else if (current == dailyFragment && dailyFragment.isAdded()) {
+            ((DailyFragment) dailyFragment).refreshOnShow();
+        } else if (current == bankFragment && bankFragment.isAdded()) {
+            ((BankFragment) bankFragment).refreshOnShow();
+        }
     }
 
     public void openQuizWithNote(Note note) {

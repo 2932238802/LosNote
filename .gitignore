@@ -13,3 +13,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# 服务端 / 网页端
+node_modules/
+web/dist/
+.npm-cache/
+.npm-logs/
+server/data/
+.env

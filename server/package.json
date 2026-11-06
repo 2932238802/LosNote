@@ -1,0 +1,16 @@
+{
+  "name": "losnote-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LosNote 服务端：题库 API + 网页端静态站 + 双向增量同步",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "license": "MIT"
+}

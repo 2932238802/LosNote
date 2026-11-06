@@ -32,7 +32,11 @@ import com.example.losnote.R;
 import com.example.losnote.ai.AiConfig;
 import com.example.losnote.ai.AiClient;
 import com.example.losnote.data.DBHelper;
+import com.example.losnote.data.DailyLog;
 import com.example.losnote.data.Note;
+import com.example.losnote.sync.SyncClient;
+import com.example.losnote.sync.SyncConfig;
+import com.example.losnote.sync.SyncResult;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -143,16 +147,76 @@ public class BankFragment extends Fragment {
     private void showSettingsMenu() {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("设置")
-                .setItems(new String[]{"学习统计", "DeepSeek API", "AI去重", "栏目管理", "导入/导出"}, (d, which) -> {
+                .setItems(new String[]{"学习统计", "云同步", "DeepSeek API", "AI去重", "栏目管理", "导入/导出"}, (d, which) -> {
                     switch (which) {
                         case 0: showStatsDialog(); break;
-                        case 1: showDeepSeekSettings(); break;
-                        case 2: showDedupeDialog(); break;
-                        case 3: showCategoryManage(); break;
-                        case 4: showIoMenu(); break;
+                        case 1: showSyncSettings(); break;
+                        case 2: showDeepSeekSettings(); break;
+                        case 3: showDedupeDialog(); break;
+                        case 4: showCategoryManage(); break;
+                        case 5: showIoMenu(); break;
                     }
                 })
                 .show();
+    }
+
+    /** 云同步设置：服务器地址 + 令牌，保存后可以立刻同步一次 */
+    private void showSyncSettings() {
+        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_sync_settings, null);
+        EditText etUrl = view.findViewById(R.id.et_sync_url);
+        EditText etToken = view.findViewById(R.id.et_sync_token);
+        TextView hint = view.findViewById(R.id.tv_sync_hint);
+
+        SyncConfig cfg = SyncConfig.load(requireContext());
+        etUrl.setText(cfg.serverUrl);
+        etToken.setText(cfg.token);
+        hint.setText(lastSyncText(cfg));
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("云同步")
+                .setView(view)
+                .setPositiveButton("保存并同步", (d, w) -> {
+                    SyncConfig next = new SyncConfig();
+                    next.serverUrl = etUrl.getText().toString();
+                    next.token = etToken.getText().toString();
+                    next.lastSyncAt = cfg.lastSyncAt;
+                    next.save(requireContext());
+                    if (!next.isConfigured()) {
+                        Toast.makeText(requireContext(), "地址和令牌都要填", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    runSyncWithToast();
+                })
+                .setNeutralButton("仅同步", (d, w) -> runSyncWithToast())
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private String lastSyncText(SyncConfig cfg) {
+        if (!cfg.isConfigured()) {
+            return "还没有配置过服务器，同步不会运行。";
+        }
+        if (cfg.lastSyncAt <= 0) {
+            return "已配置，还没同步过。";
+        }
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault());
+        return "上次同步：" + f.format(new java.util.Date(cfg.lastSyncAt));
+    }
+
+    /** 手动同步：转圈 → 提示结果 → 刷新列表 */
+    private void runSyncWithToast() {
+        ProgressDialog pd = new ProgressDialog(requireContext());
+        pd.setMessage("同步中…");
+        pd.setCancelable(false);
+        pd.show();
+        SyncClient.syncAsync(requireContext(), result -> {
+            if (!isAdded()) {
+                return;
+            }
+            pd.dismiss();
+            Toast.makeText(requireContext(), result.summary(), Toast.LENGTH_LONG).show();
+            refreshOnShow();
+        });
     }
 
     private void showStatsDialog() {
@@ -500,22 +564,42 @@ public class BankFragment extends Fragment {
             JSONArray arr = new JSONArray();
             for (Note n : all) {
                 JSONObject o = new JSONObject();
+                o.put("uuid", n.uuid == null ? "" : n.uuid);
                 o.put("name", n.name);
                 o.put("definition", n.definition == null ? "" : n.definition);
                 o.put("category", n.category == null ? "" : n.category);
+                o.put("createdAt", n.createdAt);
                 o.put("mastery", n.mastery);
+                o.put("intervalDays", n.intervalDays);
+                o.put("easeFactor", n.easeFactor);
+                o.put("reviewCount", n.reviewCount);
+                o.put("nextReview", n.nextReview);
+                o.put("lastReview", n.lastReview);
+                o.put("stars", n.stars);
                 arr.put(o);
             }
+            JSONArray logs = new JSONArray();
+            for (DailyLog d : db.queryAllDailyLogs()) {
+                JSONObject o = new JSONObject();
+                o.put("uuid", d.uuid == null ? "" : d.uuid);
+                o.put("content", d.content);
+                o.put("createdAt", d.createdAt);
+                logs.put(o);
+            }
             JSONObject root = new JSONObject();
-            root.put("version", 1);
+            root.put("version", 2);
+            root.put("exportedAt", System.currentTimeMillis());
+            root.put("reviewHistoryIncluded", false);
             root.put("notes", arr);
+            root.put("dailyLogs", logs);
 
             OutputStream os = requireContext().getContentResolver().openOutputStream(uri);
             if (os != null) {
                 os.write(root.toString(2).getBytes(StandardCharsets.UTF_8));
                 os.close();
             }
-            Toast.makeText(getContext(), "已导出 " + all.size() + " 题", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "已导出 " + all.size() + " 题（含复习进度）+ "
+                    + logs.length() + " 条足迹", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
@@ -536,29 +620,77 @@ public class BankFragment extends Fragment {
             br.close();
 
             JSONObject root = new JSONObject(sb.toString());
+            int version = root.optInt("version", 1);
             JSONArray arr = root.getJSONArray("notes");
-            List<Note> notes = new ArrayList<>();
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject o = arr.getJSONObject(i);
-                String name = o.optString("name", "").trim();
-                if (name.isEmpty()) {
-                    continue;
+            int noteCount = 0;
+            if (version >= 2) {
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.getJSONObject(i);
+                    String name = o.optString("name", "").trim();
+                    if (name.isEmpty()) {
+                        continue;
+                    }
+                    Note n = new Note(name, o.optString("definition", ""),
+                            emptyTo(o.optString("category", ""), "未分类"));
+                    n.uuid = emptyTo(o.optString("uuid", ""), null);
+                    n.createdAt = o.optLong("createdAt", System.currentTimeMillis());
+                    n.mastery = o.optInt("mastery", 0);
+                    n.intervalDays = o.optInt("intervalDays", 0);
+                    n.easeFactor = o.optInt("easeFactor", 250);
+                    n.reviewCount = o.optInt("reviewCount", 0);
+                    n.nextReview = o.optLong("nextReview", 0);
+                    n.lastReview = o.optLong("lastReview", 0);
+                    n.stars = o.optInt("stars", 0);
+                    if (db.importNote(n) > 0) {
+                        noteCount++;
+                    }
                 }
-                Note n = new Note(name, o.optString("definition", ""),
-                        o.optString("category", "未分类"));
-                n.mastery = o.optInt("mastery", 0);
-                notes.add(n);
+            } else {
+                List<Note> notes = new ArrayList<>();
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.getJSONObject(i);
+                    String name = o.optString("name", "").trim();
+                    if (name.isEmpty()) {
+                        continue;
+                    }
+                    Note n = new Note(name, o.optString("definition", ""),
+                            emptyTo(o.optString("category", ""), "未分类"));
+                    n.mastery = o.optInt("mastery", 0);
+                    notes.add(n);
+                }
+                noteCount = notes.isEmpty() ? 0 : db.insertBatch(notes);
             }
-            if (notes.isEmpty()) {
-                Toast.makeText(getContext(), "文件中没有有效题目", Toast.LENGTH_SHORT).show();
+            int logCount = 0;
+            JSONArray logs = root.optJSONArray("dailyLogs");
+            if (logs != null) {
+                for (int i = 0; i < logs.length(); i++) {
+                    JSONObject o = logs.getJSONObject(i);
+                    String content = o.optString("content", "").trim();
+                    if (content.isEmpty()) {
+                        continue;
+                    }
+                    DailyLog d = new DailyLog(0L, content, o.optLong("createdAt", System.currentTimeMillis()));
+                    d.uuid = emptyTo(o.optString("uuid", ""), null);
+                    if (db.importDailyLog(d) > 0) {
+                        logCount++;
+                    }
+                }
+            }
+            if (noteCount == 0 && logCount == 0) {
+                Toast.makeText(getContext(), "文件中没有有效数据（或已全部导入过）", Toast.LENGTH_SHORT).show();
                 return;
             }
-            int ok = db.insertBatch(notes);
-            Toast.makeText(getContext(), "已导入 " + ok + " 题", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(),
+                    "已导入 " + noteCount + " 题 + " + logCount + " 条足迹，联网后自动上传",
+                    Toast.LENGTH_LONG).show();
             refreshOnShow();
         } catch (Exception e) {
             Toast.makeText(getContext(), "导入失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
+    }
+
+    private static String emptyTo(String s, String fallback) {
+        return s == null || s.trim().isEmpty() ? fallback : s;
     }
 
     /* ---------------- 刷新与搜索 ---------------- */

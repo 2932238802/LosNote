@@ -1,0 +1,14 @@
+.git
+.idea
+.gradle
+.npm-cache
+.npm-logs
+node_modules
+**/node_modules
+web/dist
+server/data
+app
+gradle
+docs
+*.iml
+local.properties
