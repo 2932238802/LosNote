@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.LosNote.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/theme_outline_variant"
-    app:strokeWidth="1dp"
-    android:foreground="?attr/selectableItemBackground">
+    android:layout_marginBottom="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="4dp"
-        android:paddingBottom="10dp">
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="12dp">
+
+        <View
+            android:layout_width="3dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="12dp"
+            android:background="?attr/colorPrimaryContainer" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -32,18 +32,17 @@
                 android:id="@+id/tv_daily_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
                 android:textColor="@color/hint_text"
-                tools:text="09:30" />
+                android:textSize="11sp" />
 
             <TextView
                 android:id="@+id/tv_daily_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textSize="15sp"
-                android:lineSpacingExtra="2dp"
-                tools:text="完成了今天的复习计划" />
+                android:layout_marginTop="3dp"
+                android:lineSpacingExtra="3dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="15sp" />
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -53,12 +52,12 @@
             android:layout_height="wrap_content"
             android:minWidth="0dp"
             android:minHeight="0dp"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="6dp"
+            android:paddingStart="10dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="6dp"
             android:text="删除"
-            android:textSize="12sp"
-            android:textColor="@color/hint_text" />
-
+            android:textColor="@color/hint_text"
+            android:textSize="12sp" />
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

@@ -1,46 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.LosNote.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/theme_outline_variant"
-    app:strokeWidth="1dp"
-    android:foreground="?attr/selectableItemBackground">
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardUseCompatPadding="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/cb_item_select"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
-                android:clickable="false"
-                android:focusable="false"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tv_item_mastered"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:text="✓"
-                android:textStyle="bold"
-                android:textColor="@color/mastered"
+                android:layout_marginEnd="8dp"
+                android:buttonTint="?attr/colorPrimary"
                 android:visibility="gone" />
 
             <TextView
@@ -48,33 +35,66 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_item_mastered"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="✓"
+                android:textColor="@color/mastered"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                tools:text="无限猴子定理" />
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/tv_item_category"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/tag_bg"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:textSize="12sp"
+                android:background="@drawable/bg_tag"
+                android:paddingStart="8dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="3dp"
                 android:textColor="@color/tag_text"
-                tools:text="数学" />
+                android:textSize="11sp" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tv_item_due"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/hint_text"
+                android:textSize="11sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/tv_item_definition"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="13sp"
-            android:textColor="@color/secondary_text"
-            android:maxLines="3"
+            android:layout_marginTop="9dp"
             android:ellipsize="end"
-            tools:text="一只猴子无限随机敲键盘……" />
+            android:lineSpacingExtra="3dp"
+            android:maxLines="2"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
 
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

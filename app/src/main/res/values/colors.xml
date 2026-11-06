@@ -1,26 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-
-    <!-- 黑白极客风：浅色模式语义色 -->
-    <color name="tag_bg">#EEEEEE</color>
-    <color name="tag_text">#202020</color>
-    <color name="secondary_text">#4D4D4D</color>
-    <color name="hint_text">#606060</color>
-    <color name="mastered">#202020</color>
-    <color name="delete_red">#2A2A2A</color>
-    <color name="star_text">#404040</color>
-
-    <color name="theme_primary">#171717</color>
+    <!-- 品牌与主色：墨蓝（取自应用图标） -->
+    <color name="theme_primary">#24406B</color>
     <color name="theme_on_primary">#FFFFFF</color>
-    <color name="theme_primary_container">#E5E5E5</color>
-    <color name="theme_on_primary_container">#171717</color>
-    <color name="theme_surface">#FAFAFA</color>
-    <color name="theme_surface_variant">#F0F0F0</color>
-    <color name="theme_on_surface">#171717</color>
-    <color name="theme_on_surface_variant">#555555</color>
-    <color name="theme_outline">#707070</color>
-    <color name="theme_outline_variant">#C8C8C8</color>
-    <color name="theme_background">#FAFAFA</color>
+    <color name="theme_primary_container">#DCE6F6</color>
+    <color name="theme_on_primary_container">#0F1F35</color>
+
+    <!-- 辅助色：青绿（记号笔高亮） -->
+    <color name="theme_secondary">#12715F</color>
+    <color name="theme_on_secondary">#FFFFFF</color>
+    <color name="theme_secondary_container">#CDEFE7</color>
+    <color name="theme_on_secondary_container">#00251F</color>
+
+    <!-- 第三色：暖金（星标） -->
+    <color name="theme_tertiary">#7A5A00</color>
+    <color name="theme_on_tertiary">#FFFFFF</color>
+    <color name="theme_tertiary_container">#FFE9A8</color>
+    <color name="theme_on_tertiary_container">#261A00</color>
+
+    <!-- 表面层级 -->
+    <color name="theme_surface">#FFFFFF</color>
+    <color name="theme_surface_variant">#E9EEF6</color>
+    <color name="theme_surface_container_lowest">#FFFFFF</color>
+    <color name="theme_surface_container_low">#F7F8FC</color>
+    <color name="theme_surface_container">#F1F4FA</color>
+    <color name="theme_surface_container_high">#E8EDF5</color>
+    <color name="theme_surface_container_highest">#E1E7F1</color>
+    <color name="theme_background">#F5F7FB</color>
+
+    <color name="theme_on_surface">#141A22</color>
+    <color name="theme_on_surface_variant">#4C5565</color>
+    <color name="theme_outline">#8A93A3</color>
+    <color name="theme_outline_variant">#DCE2EC</color>
+
+    <color name="theme_error">#B3261E</color>
+    <color name="theme_on_error">#FFFFFF</color>
+
+    <color name="card_bg">#FFFFFF</color>
+    <color name="card_bg_alt">#F1F4FA</color>
+
+    <!-- 语义色（沿用旧名，布局里大量引用） -->
+    <color name="tag_bg">#E7EDF9</color>
+    <color name="tag_text">#24406B</color>
+    <color name="secondary_text">#4C5565</color>
+    <color name="hint_text">#79839A</color>
+    <color name="mastered">#12715F</color>
+    <color name="delete_red">#B3261E</color>
+    <color name="star_text">#9A6B00</color>
+    <color name="star_gold">#E0A93B</color>
+
+    <!-- 渐变装饰 -->
+    <color name="hero_gradient_start">#24406B</color>
+    <color name="hero_gradient_end">#12715F</color>
 </resources>

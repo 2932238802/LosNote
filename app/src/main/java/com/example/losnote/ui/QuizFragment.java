@@ -44,6 +44,8 @@ public class QuizFragment extends Fragment {
     private MaterialButton btnCategorySelect;
     private final Set<String> selectedCategories = new HashSet<>();
     private TextView tvScope, tvCardName, tvCardDefinition, tvCardHint, tvCardCategory, tvCardNext;
+    private View quizEmpty;
+    private TextView tvQuizEmptyTitle, tvQuizEmptySub;
     private View card, barGrade;
 
     private List<Note> pool = new ArrayList<>();
@@ -71,6 +73,9 @@ public class QuizFragment extends Fragment {
         btnCategorySelect = v.findViewById(R.id.btn_category_select);
         tvScope = v.findViewById(R.id.tv_scope);
         card = v.findViewById(R.id.card_quiz);
+        quizEmpty = v.findViewById(R.id.quiz_empty);
+        tvQuizEmptyTitle = v.findViewById(R.id.tv_quiz_empty_title);
+        tvQuizEmptySub = v.findViewById(R.id.tv_quiz_empty_sub);
         tvCardName = v.findViewById(R.id.tv_card_name);
         tvCardDefinition = v.findViewById(R.id.tv_card_definition);
         tvCardHint = v.findViewById(R.id.tv_card_hint);
@@ -138,6 +143,15 @@ public class QuizFragment extends Fragment {
         String catName = selectedCategories.isEmpty() ? "全部栏目" :
                 String.join(", ", selectedCategories);
         tvScope.setText(catName + " · 共 " + pool.size() + " 题");
+        if (tvQuizEmptyTitle != null) {
+            if (pool.isEmpty()) {
+                tvQuizEmptyTitle.setText("这个范围里还没有题");
+                tvQuizEmptySub.setText("在「录入」页添加，或在题库里换个栏目");
+            } else {
+                tvQuizEmptyTitle.setText("点右上角抽一题");
+                tvQuizEmptySub.setText("会按遗忘曲线加权抽题，点卡片看答案，左右滑动切题");
+            }
+        }
     }
 
     /** 打开多栏目选择对话框 */
@@ -272,6 +286,9 @@ public class QuizFragment extends Fragment {
 
     private void showCard(boolean animateIn) {
         card.setVisibility(View.VISIBLE);
+        if (quizEmpty != null) {
+            quizEmpty.setVisibility(View.GONE);
+        }
         renderFace();
         if (animateIn) {
             card.setAlpha(0f);
@@ -385,6 +402,7 @@ public class QuizFragment extends Fragment {
                     history.removeIf(n -> n.id == id);
                     currentNote = null;
                     card.setVisibility(View.GONE);
+                    quizEmpty.setVisibility(View.VISIBLE);
                     updateScope();
                     Toast.makeText(getContext(), "已删除", Toast.LENGTH_SHORT).show();
                     drawOne();

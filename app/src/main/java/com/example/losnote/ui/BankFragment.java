@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,6 +39,7 @@ import com.example.losnote.sync.SyncClient;
 import com.example.losnote.sync.SyncConfig;
 import com.example.losnote.sync.SyncResult;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.json.JSONArray;
@@ -69,6 +71,7 @@ public class BankFragment extends Fragment {
     private MaterialButton btnBankCategory;
     private final Set<String> selectedBankCategories = new HashSet<>();
     private EditText etSearch;
+    private LinearLayout chipsBankCategories;
     private TextView tvCount;
     private TextView tvHint;
     private RecyclerView recycler;
@@ -98,6 +101,7 @@ public class BankFragment extends Fragment {
 
         btnBankCategory = v.findViewById(R.id.btn_bank_category);
         etSearch = v.findViewById(R.id.et_search);
+        chipsBankCategories = v.findViewById(R.id.chips_bank_categories);
         tvCount = v.findViewById(R.id.tv_bank_count);
         tvHint = v.findViewById(R.id.tv_bank_hint);
         recycler = v.findViewById(R.id.recycler_bank);
@@ -145,8 +149,15 @@ public class BankFragment extends Fragment {
     /* ---------------- 设置菜单 / DeepSeek 设置 / AI 去重 ---------------- */
 
     private void showSettingsMenu() {
+        String version = "1.1";
+        try {
+            android.content.pm.PackageInfo pi = requireContext().getPackageManager()
+                    .getPackageInfo(requireContext().getPackageName(), 0);
+            version = pi.versionName;
+        } catch (Exception ignored) {
+        }
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("设置")
+                .setTitle("设置 · v" + version)
                 .setItems(new String[]{"学习统计", "云同步", "DeepSeek API", "AI去重", "栏目管理", "导入/导出"}, (d, which) -> {
                     switch (which) {
                         case 0: showStatsDialog(); break;
@@ -787,13 +798,55 @@ public class BankFragment extends Fragment {
     }
 
     private void updateBankCategoryButtonText() {
-        if (selectedBankCategories.isEmpty()) {
-            btnBankCategory.setText("按栏目筛选（全部）");
-        } else if (selectedBankCategories.size() <= 3) {
-            btnBankCategory.setText(String.join(", ", selectedBankCategories));
-        } else {
-            btnBankCategory.setText("筛选 " + selectedBankCategories.size() + " 个栏目");
+        renderBankChips();
+    }
+
+    /** 栏目筛选 chips：单选点击切换，多选对话框可叠加 */
+    private void renderBankChips() {
+        if (chipsBankCategories == null || db == null) {
+            return;
         }
+        chipsBankCategories.removeAllViews();
+        List<String> cats = db.queryCategories();
+
+        Chip all = makeBankChip("全部", selectedBankCategories.isEmpty());
+        all.setOnClickListener(view -> {
+            selectedBankCategories.clear();
+            renderBankChips();
+            refreshList();
+        });
+        chipsBankCategories.addView(all);
+
+        for (String c : cats) {
+            boolean on = selectedBankCategories.contains(c);
+            Chip chip = makeBankChip(c, on);
+            chip.setOnClickListener(view -> {
+                if (selectedBankCategories.size() == 1 && selectedBankCategories.contains(c)) {
+                    selectedBankCategories.clear();
+                } else {
+                    selectedBankCategories.clear();
+                    selectedBankCategories.add(c);
+                }
+                renderBankChips();
+                refreshList();
+            });
+            chipsBankCategories.addView(chip);
+        }
+    }
+
+    private Chip makeBankChip(String text, boolean checked) {
+        Chip chip = new Chip(requireContext());
+        chip.setText(text);
+        chip.setCheckable(true);
+        chip.setChecked(checked);
+        chip.setEnsureMinTouchTargetSize(false);
+        chip.setTextSize(13);
+        chip.setChipMinHeight(getResources().getDisplayMetrics().density * 32);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMarginEnd((int) (getResources().getDisplayMetrics().density * 8));
+        chip.setLayoutParams(lp);
+        return chip;
     }
 
     /* ---------------- 多选 / 批量删除 ---------------- */

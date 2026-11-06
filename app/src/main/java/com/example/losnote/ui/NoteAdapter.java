@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.losnote.data.Note;
+import com.example.losnote.data.Srs;
 import com.example.losnote.R;
 
 import java.util.HashSet;
@@ -150,7 +151,13 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.VH> {
         } else {
             h.tvName.setText(n.name);
         }
-        h.tvCategory.setText(n.category);
+        if (n.category == null || n.category.trim().isEmpty()) {
+            h.tvCategory.setVisibility(View.GONE);
+        } else {
+            h.tvCategory.setVisibility(View.VISIBLE);
+            h.tvCategory.setText(n.category);
+        }
+        h.tvDue.setText(Srs.nextReviewText(n));
         h.tvMastered.setVisibility(n.mastery == 1 ? View.VISIBLE : View.GONE);
         h.tvDefinition.setText(n.definition == null || n.definition.isEmpty()
                 ? "（无定义）" : n.definition);
@@ -183,7 +190,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.VH> {
     }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvName, tvCategory, tvDefinition, tvMastered;
+        TextView tvName, tvCategory, tvDefinition, tvMastered, tvDue;
         CheckBox checkBox;
 
         VH(@NonNull View v) {
@@ -192,6 +199,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.VH> {
             tvCategory = v.findViewById(R.id.tv_item_category);
             tvDefinition = v.findViewById(R.id.tv_item_definition);
             tvMastered = v.findViewById(R.id.tv_item_mastered);
+            tvDue = v.findViewById(R.id.tv_item_due);
             checkBox = v.findViewById(R.id.cb_item_select);
         }
     }
