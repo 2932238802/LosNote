@@ -67,23 +67,53 @@ APK 装好后：**题库 → 设置 → 云同步**，地址填 `https://note.ex
 
 ## 6. 备份与恢复
 
-数据就是一个 SQLite 文件，在命名卷 `losnote-data` 里：
+数据是一个 SQLite 文件，在命名卷 `losnote-data` 里。**库开了 WAL**，所以不能只拷
+`losnote.db` 一个文件——实测某个有 1 条题的库，`losnote.db` 只有 4 KB（空壳），
+140 KB 的真实数据全在 `losnote.db-wal` 里。单拷主文件会得到一份"空备份"。
+
+用 SQLite 自带的 `VACUUM INTO` 做一致性快照（会把 WAL 合并进去）：
 
 ```bash
-# 备份（建议加到 crontab，每天 3 点）
-docker run --rm -v losnote-data:/data -v /opt/backup:/backup alpine \
-  sh -c 'cp /data/losnote.db /backup/losnote-$(date +%F).db'
+# 备份（建议加到 crontab，每天 3:00；容器名按 docker compose ps 来）
+docker exec losnote node -e "const{DatabaseSync}=require('node:sqlite');new DatabaseSync('/data/losnote.db').exec(\"VACUUM INTO '/data/snapshot.db'\")"
+docker cp losnote:/data/snapshot.db "/opt/backup/losnote-$(date +%F).db"
+docker exec losnote rm -f /data/snapshot.db
+```
 
-# 恢复
+快照文件可以直接用 `sqlite3 快照.db 'select count(*) from notes'` 验一下条数。
+
+恢复（先停、再换、再起；顺手清掉旧 WAL，否则会和旧库混在一起）：
+
+```bash
 docker compose stop
-docker run --rm -v losnote-data:/data -v /opt/backup:/backup alpine \
-  sh -c 'cp /backup/losnote-2026-11-06.db /data/losnote.db'
+docker run --rm -v losnote-data:/data -v /opt/backup:/backup losnote:latest \
+  sh -c 'rm -f /data/losnote.db /data/losnote.db-wal /data/losnote.db-shm
+         && cp /backup/losnote-2026-11-06.db /data/losnote.db'
 docker compose start
 ```
 
-WAL 模式下直接拷文件可能丢掉最后几秒写入；真要严格一致就先
-`curl -X POST -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8787/api/…` 触发一次 checkpoint，
-或者接受"最多丢几秒"的取舍（个人题库够用）。
+> 整目录拷贝也行，但容器必须处于停止状态：`docker cp losnote:/data/. /opt/backup/`。
+
+## 6.5 没有 docker compose 插件时
+
+有的精简镜像/老版本只装了 `docker` 没装 compose 插件（`docker compose version` 报
+`unknown command: docker compose`）。这套服务的 compose 文件很薄，等价的一行是：
+
+```bash
+docker volume create losnote-data
+docker run -d --name losnote --restart unless-stopped \
+  -p 127.0.0.1:8787:8787 \
+  -e LOSNOTE_TOKEN='把 .env 里那串粘贴进来' \
+  -e LOSNOTE_DB=/data/losnote.db \
+  -v losnote-data:/data \
+  losnote:latest
+docker logs -f losnote    # 看到「监听中」即可
+```
+
+之后备份/恢复/升级把 `docker compose xxx` 换成 `docker xxx losnote` 即可。
+（要装 compose 插件：`apt install docker-compose-plugin` 或从
+`https://github.com/docker/compose/releases` 下 `docker-compose-linux-x86_64`
+放到 `~/.docker/cli-plugins/docker-compose` 并 `chmod +x`。）
 
 ## 7. 升级
 

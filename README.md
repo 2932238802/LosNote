@@ -113,6 +113,7 @@ docker compose up -d --build
 
 ```bash
 cd server && npm test       # node:test：SRS / 导入解析 / 备份导入 / 同步（含墓碑）/ REST 路由集成，40 个用例
+bash scripts/test-android.sh  # 安卓 JVM 单测 20 个（Robolectric：v5→v6 迁移、字段组 LWW、同步客户端、备份互通）
 ```
 
 网页端可用真实浏览器跑一遍（需要本地有 Playwright 的 Chromium，见 `web/e2e/README.md`）：

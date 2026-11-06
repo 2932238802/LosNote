@@ -6,7 +6,7 @@ Java Android 间隔重复笔记/题库应用，支持 Markdown 渲染和 AI 辅�
 
 ```bash
 gradlew.bat assembleDebug            # 构建 debug APK
-gradlew.bat test                      # JVM 单元测试（含 Robolectric 的迁移/同步用例）
+gradlew.bat test                      # JVM 单元测试 20 个（迁移 / LWW / 同步客户端 / 备份互通）
 scripts/test-android.sh               # WSL/Linux：自动配工具链并跑同一批测试
 gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 ```
@@ -83,6 +83,8 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 - Robolectric 需要 `android-all-instrumented` jar：`scripts/test-android.sh` 会自动下到 `.toolchain/robolectric-deps/`（已 gitignore）；`app/build.gradle.kts` 在该目录存在时把 `robolectric.dependency.dir` 指过去，不存在时走默认 `~/.m2`。
 - `ExampleUnitTest` / `ExampleInstrumentedTest` 是生成器自带的样板，保留未删。
 - 服务端：`cd server && npm test`（40 个用例）。`server/test/rest.test.js` 会真起一个服务进程（临时端口 + 临时库），覆盖令牌鉴权、CRUD、复习、导入解析/提交、AI 设置脱敏、同步增量与墓碑，以及**静态目录带 `..` 也要能托管**（曾因未归一化导致全站 403）。
+- 同步客户端：`app/src/test/java/com/example/losnote/sync/SyncClientTest.java` 用裸 Socket 起本地桩服务（android.jar 没有 `com.sun.net.httpserver`），
+  走真 `HttpURLConnection` 验证请求体字段/令牌头、墓碑转 deleted、拉取落库并推进游标、远端墓碑删本地题、401 映射成可读错误，共 5 个用例。
 - 备份互通：`app/src/test/java/com/example/losnote/ui/BackupJsonTest.java` 用 Robolectric 验证「网页导出的 v2 JSON → 手机导入」SRS 不丢、uuid 保留、重复导入幂等、v1 老备份仍兼容。样例 `app/src/test/resources/server-backup-v2.json` 由服务端 `exportBackup()` 真跑生成，不是手写。
 - 备份导入（网页端）：`POST /api/import/backup` → `notes.js: importBackup()`，文件为准不做 LWW，保留 uuid 与 SRS，重复 uuid 覆盖、足迹按 uuid 去重；`ImportView` 选到备份文件（有 `version` / `dailyLogs` / 题里有 uuid 或 SRS 字段）时直接走它，普通 `{notes}` 仍进预览。
 - 网页端：`web/e2e/crud.mjs`、`web/e2e/import.mjs`、`web/e2e/export.mjs` 是 Playwright 端到端脚本（真实 Chromium），覆盖登录、新建/编辑/删除、Markdown 表格渲染、Esc 关弹层、复习评分、竖线/`@@@` 两种导入格式、未配 AI key 的提示，以及导出备份的文件名与 v2 字段契约、备份文件按进度导入（`web/e2e/fixtures/backup-v2.json`）。跑法见 `web/e2e/README.md`。
