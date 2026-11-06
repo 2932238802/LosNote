@@ -7,7 +7,7 @@ Java Android 间隔重复笔记/题库应用，支持 Markdown 渲染和 AI 辅�
 ```bash
 gradlew.bat assembleDebug            # 构建 debug APK
 gradlew.bat test                      # JVM 单元测试（含 Robolectric 的迁移/同步用例）
-gradlew.bat assembleDebug             # 或：scripts/test-android.sh（WSL 下自动配工具链）
+scripts/test-android.sh               # WSL/Linux：自动配工具链并跑同一批测试
 gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 ```
 
