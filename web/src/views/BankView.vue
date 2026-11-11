@@ -21,6 +21,7 @@
 
     <div v-if="loading" class="empty">加载中…</div>
     <div v-else-if="!items.length" class="empty">
+      <div class="empty-mark">—</div>
       还没有题目。<button class="ghost" @click="openCreate">写第一条</button>
     </div>
 
@@ -48,6 +49,7 @@
             <span class="hint">{{ dueText(active) }}</span>
             <div class="spacer"></div>
             <button class="ghost" @click="openEdit(active)">编辑</button>
+            <button class="ghost" @click="copyDef(active)">{{ copied ? '已复制' : '复制' }}</button>
             <button class="danger" @click="remove(active)">删除</button>
             <button class="ghost" @click="close">关闭</button>
           </div>
@@ -111,9 +113,32 @@ export default {
     const active = ref(null);
     const mode = ref('view');
     const form = ref({ name: '', definition: '', category: '' });
+    const copied = ref(false);
 
     const summary = (s) => plainSummary(s, 140);
     const dueText = (n) => humanDue(n);
+
+    async function copyDef(n) {
+      const text = `# ${n.name || ''}\n\n${n.definition || ''}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        copied.value = true;
+        setTimeout(() => (copied.value = false), 1600);
+      } catch {
+        // 剪贴板不可用（非安全上下文）时退回选中文本
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          copied.value = true;
+          setTimeout(() => (copied.value = false), 1600);
+        } finally {
+          document.body.removeChild(ta);
+        }
+      }
+    }
 
     async function loadCategories() {
       try {
@@ -228,6 +253,7 @@ export default {
       active,
       mode,
       form,
+      copied,
       summary,
       dueText,
       load,
@@ -235,6 +261,7 @@ export default {
       openView,
       openCreate,
       openEdit,
+      copyDef,
       save,
       remove,
     };

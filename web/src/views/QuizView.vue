@@ -19,13 +19,14 @@
     <div v-if="loading" class="empty">正在取题…</div>
 
     <div v-else-if="!queue.length" class="empty">
+      <div class="empty-mark">—</div>
       这一轮没有到期的题 —— 去题库加几条，或者等复习时间到。
     </div>
 
     <div v-else-if="current" class="panel card-stage">
-      <div class="hint">
+      <div class="row">
         <span class="chip">{{ current.category || '未分类' }}</span>
-        <span style="margin-left: 8px">{{ dueText(current) }}</span>
+        <span class="hint">{{ dueText(current) }}</span>
       </div>
 
       <div class="card-question">{{ current.name }}</div>
@@ -41,14 +42,31 @@
         <button class="primary" @click="revealed = true">显示答案</button>
       </div>
 
-      <div v-else class="grade-row">
-        <button :disabled="grading" @click="grade(0)">没想起来<small class="hint" style="display:block">10 分钟后再来</small></button>
-        <button class="primary" :disabled="grading" @click="grade(1)">想起来了<small style="display:block;opacity:.85">正常推进</small></button>
-        <button :disabled="grading" @click="grade(2)">太简单<small class="hint" style="display:block">拉长间隔</small></button>
+      <div v-else class="stack">
+        <div class="grade-row">
+          <button :disabled="grading" @click="grade(0)">
+            没想起来<small>10 分钟后再来</small>
+          </button>
+          <button class="primary" :disabled="grading" @click="grade(1)">
+            想起来了<small>正常推进</small>
+          </button>
+          <button :disabled="grading" @click="grade(2)">
+            太简单<small>拉长间隔</small>
+          </button>
+        </div>
+        <div class="kbd-hint">
+          <span>快捷键：</span>
+          <kbd>空格</kbd><span>显示答案</span>
+          <span class="spacer" style="width: 8px"></span>
+          <kbd>1</kbd><span>忘记</span>
+          <kbd>2</kbd><span>想起</span>
+          <kbd>3</kbd><span>简单</span>
+        </div>
       </div>
     </div>
 
     <div v-else class="empty">
+      <div class="empty-mark">✓</div>
       <div style="font-size: 17px; margin-bottom: 6px">这一轮复习完了</div>
       <div>共评分 {{ done }} 次</div>
     </div>
@@ -56,7 +74,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { api } from '../api.js';
 import { humanDue } from '../markdown.js';
 import MarkdownView from '../components/MarkdownView.vue';
@@ -123,9 +141,33 @@ export default {
       }
     }
 
+    // 键盘：空格显示答案，1/2/3 评分。焦点落在输入控件上时不抢键。
+    function onKeydown(e) {
+      const t = e.target;
+      if (t && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName)) return;
+      if (!current.value) return;
+      if (e.code === 'Space') {
+        if (!revealed.value) {
+          e.preventDefault();
+          revealed.value = true;
+        }
+        return;
+      }
+      if (revealed.value && !grading.value) {
+        if (e.key === '1') grade(0);
+        else if (e.key === '2') grade(1);
+        else if (e.key === '3') grade(2);
+      }
+    }
+
     onMounted(() => {
       loadCategories();
       start();
+      window.addEventListener('keydown', onKeydown);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('keydown', onKeydown);
     });
 
     return {
