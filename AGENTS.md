@@ -60,6 +60,21 @@ gradlew.bat connectedAndroidTest      # 插桩测试（需设备/模拟器）
 | `docs/sync-design.md` | 同步协议、字段组、v5→v6 迁移说明 |
 | `Dockerfile` / `docker-compose.yml` | 一键部署（多阶段构建 web，再打运行时镜像） |
 
+## 服务器更新
+
+仓库根目录的 `update.sh` 是服务器更新入口，可从任意目录调用（会先切到脚本所在目录）：
+
+```bash
+bash update.sh              # 可选 --help / --no-pull
+```
+
+要求 `.env` 已配置、工作区干净、当前分支为 `main`；脚本用 `git fetch origin main` +
+`git pull --ff-only` 快进并校验 `HEAD == origin/main`（分叉只报错，不 reset/merge）。
+重建前用 `VACUUM INTO` 备份数据库到数据卷的 `/data/backups/`（保留 14 份），再
+`docker compose up -d --build --force-recreate`（会有短暂停服），最后校验容器启动时间、`/api/health` 与首页入口资源。
+前置检查失败会退出非 0 并说明“未改动工作区，无需回滚”；运行阶段失败会打印失败阶段、最近 100 行日志与回滚提示。
+脚本不会删除 `losnote-data` 卷。
+
 ## 手机端 UI 约定（v1.1 起）
 
 - **不要改 view id**：四个 Fragment 和两个 Adapter 都直接 `findViewById`，改 id 会静默返回 null。

@@ -37,3 +37,60 @@
   - 题库内容、栏目管理、同步协议；
   - 线上部署操作本身（发布/重启由用户执行，见 `T-004`）。
 - 变更历史：v1 2026-11-18 初始，来源 `CR-001`。
+
+### R-002 新增 update.sh：拉取、备份、重建、验证（优先级 P1，版本 v1）
+
+- 来源：`CR-002`（用户 2026-11-18 选择稳健版）
+- 背景：服务器更新靠手工操作；2026-11-18 出现 `origin=/opt/git/losnote.git` 导致 `git pull` 显示 up to date，但服务器 HEAD 仍是 `bfc2876`，实际未更新。
+- 描述：在仓库根目录提供 `update.sh`，一次执行完成：前置检查 → `git fetch/pull --ff-only` → 备份 SQLite → `docker compose up -d --build` → 验证容器启动时间、健康检查与前端资源指纹；失败时停止并给出日志与回滚提示。
+- 成功指标：脚本成功时能证明运行代码 = `origin/main` 最新 commit；失败时退出码非 0 且不把旧代码/旧镜像当作成功；基线为人工判断，已发生误判。
+- 验收标准：
+  - `AC-002-1`（前置检查）工作区有未提交改动、当前分支不是 `main`、detached HEAD、缺少 `.env`、缺少 `git`/`docker`/`docker compose` 任一项时，脚本在拉取/构建前退出非 0，并打印原因；不修改工作区。
+  - `AC-002-2`（快进）执行 `git fetch origin main` + `git pull --ff-only`；完成后 `HEAD == origin/main`。若本地与远程分叉，脚本失败并打印差异，不执行 `reset --hard` 或自动 merge。
+  - `AC-002-3`（备份）重建前对 `/data/losnote.db` 执行 `VACUUM INTO` 生成时间戳备份；备份文件大小 > 0、可用 SQLite 打开并读到 `notes` 表；只保留最近 N 份（建议 14）。
+  - `AC-002-4`（重建）执行 `docker compose up -d --build`；容器 `losnote` 处于 Running；`docker inspect` 的 `State.StartedAt` 晚于本次构建开始时间。
+  - `AC-002-5`（验证）`GET /api/health` 返回 200 且 `ok:true`；首页返回的 HTML 引用的 JS 资源与容器内 `/app/web-dist/index.html` 的入口资源一致；脚本打印 commit、健康检查地址和结束时间。
+  - `AC-002-6`（失败处理）任一阶段失败时退出非 0，打印失败阶段与 `docker compose logs --tail=100`，并给出上一版本镜像/commit 的回滚提示；不删除 `losnote-data` 卷。
+  - `AC-002-7`（并发）同一目录同时只允许一个 `update.sh` 实例；第二个实例立即退出非 0，提示已有更新在执行。
+  - `AC-002-8`（参数与安全）支持 `--help`、`--no-pull`（仍 fetch 并校验 `HEAD == origin/main`）；不读取或打印 `LOSNOTE_TOKEN`，不修改 `.env`。
+  - `AC-002-9`（幂等）连续执行两次：第二次即使没有新提交也能完成，不删除数据卷、不产生重复容器、不破坏备份保留策略。
+- NFR 影响：
+  - 安全：适用。令牌不落日志；不删除数据卷；备份文件可读但含题库内容，需限制权限。
+  - 性能：适用。脚本开销 <1s；Docker 构建耗时为主；备份为单文件快照。
+  - 兼容性：适用。bash 4+、Docker Compose v2、Linux；origin 可为 SSH 或本地镜像。
+  - 可观测性：适用。分阶段输出、失败日志、回滚提示。
+  - 隐私：适用。备份文件包含题目与进度，保留在本机数据卷内，不上传。
+  - 成本：不适用。
+- 影响面：
+  - 模块：新增根目录 `update.sh`；`README.md` / `docs/deploy.md` / `AGENTS.md` 补充用法。
+  - 接口/数据：不改 API、表结构；只新增备份文件。
+  - 配置：读取现有 `.env`，无新增必填变量。
+  - 现有测试：无自动化覆盖；`bash -n` + 服务器实跑验收（`T-008`）。
+- 不在范围内：CI/CD 自动触发、systemd/pm2 模式、自动解决 git 分叉、HTTPS 证书、应用代码改动。
+- 变更历史：v1 2026-11-18 初始，来源 `CR-002`。
+
+### R-003 网页端 favicon（优先级 P2，版本 v1）
+
+- 来源：`CR-003`（用户 2026-11-18 选择新矢量标记 + 仅标签页 favicon）
+- 背景：`web/index.html` 没有 icon 链接，浏览器标签页显示默认空白图标。
+- 描述：为网页端提供一套新的矢量 favicon（简化纸卡 + 金色星，沿用品牌色），并在 `web/index.html` 声明；提供 SVG 与 ICO/PNG 回退。
+- 成功指标：标签页显示新图标；图标资源 200；16px 可辨识；无外部请求。
+- 验收标准：
+  - `AC-003-1`（声明）`web/index.html` 的 `<head>` 包含 `<link rel="icon" type="image/svg+xml" href="/favicon.svg">`，并提供 ICO/PNG 回退链接。
+  - `AC-003-2`（资源）构建后的站点对 `/favicon.svg`、`/favicon.ico`、`/favicon-32.png` 返回 200；SVG 的 Content-Type 为 `image/svg+xml`，ICO/PNG 为对应图像类型。
+  - `AC-003-3`（构建链）`cd web && npm run build` 后，`web/dist/` 根目录存在上述文件；Docker 镜像内 `/app/web-dist/` 同样存在。
+  - `AC-003-4`（视觉）16×16 下可辨认“纸卡 + 星”轮廓；无 1px 细线、无小字；与 App 图标使用同一套品牌色。
+  - `AC-003-5`（对比度）浅色与深色浏览器标签页下图标均可辨识，不出现与背景融为一体的边缘。
+  - `AC-003-6`（无外部请求）图标全部由本站提供，不引用 CDN、data URI 外部域或第三方跟踪。
+  - `AC-003-7`（回退）不支持 SVG favicon 的浏览器使用 ICO/PNG 时显示同一标记，不退化为空白。
+- NFR 影响：
+  - 性能：适用。图标合计 <20KB，不新增 JS。
+  - 安全：适用。无脚本、无外部资源。
+  - 兼容性：适用。现代浏览器 SVG，旧浏览器 ICO/PNG。
+  - 隐私/可观测/成本：不适用。
+- 影响面：
+  - 模块：`web/index.html`、`web/public/favicon.*`（新增）。
+  - 接口/数据/配置：无。
+  - 现有测试：`npm run build`；静态资源 200 检查；标签页视觉人工验收。
+- 不在范围内：Apple touch icon、PWA manifest、Android 图标、动画 favicon。
+- 变更历史：v1 2026-11-18 初始，来源 `CR-003`。

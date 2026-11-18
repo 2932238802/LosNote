@@ -78,6 +78,12 @@ cp .env.example .env        # 填 LOSNOTE_TOKEN
 docker compose up -d --build
 ```
 
+服务器上已有仓库时，日常更新直接执行根目录脚本（拉取 → 备份 SQLite → 重建 → 校验健康与前端入口）：
+
+```bash
+bash update.sh              # 可选 --help / --no-pull
+```
+
 `docker-compose.yml` 默认只监听 `127.0.0.1:8787`，请用 Caddy/Nginx 反代并配 HTTPS（手机端尤其需要，明文 HTTP 只在局域网方便调试）。数据在命名卷 `losnote-data` 里。
 
 完整的部署、HTTPS、备份恢复、排错步骤见 [docs/deploy.md](docs/deploy.md)。

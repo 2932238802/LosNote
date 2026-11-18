@@ -63,3 +63,40 @@
 - AC-001-2 语义：避重基线 = **上一次成功抽题时的 `queue[0]`**，不是“点击前屏幕上正在显示的题”。评分推进后再点「重新抽题」，新首题可能与当前屏上题相同，但两次点击的首题不同；若用户要求避开“当前屏上题”，需另开任务。
 - 影响：`web/src/quiz-order.js`、`web/src/views/QuizView.vue`；并发请求由 `web/src/request-guard.js` 守卫（T-002 r1）。浏览器页面级验证由 `T-003` 覆盖。
 - 可逆性：容易（纯前端逻辑，无数据迁移）。
+
+### D-006 update.sh 每次更新强制重建容器
+
+- 日期：2026-11-18
+- 背景：`R-002` 要求校验容器 `StartedAt` 晚于本次构建；若 `docker compose up -d --build` 判定配置未变而复用旧容器，启动时间校验会失败。没有新提交时重复执行也应能完成。
+- 选项：
+  - A. `docker compose up -d --build --force-recreate`：保证容器真正重启，可验证；
+  - B. 只在镜像/commit 变化时重建：减少无意义停机，但要额外比较镜像 ID/HEAD；
+  - C. 不校验启动时间，只看 health。
+- 结论：**A**（`T-006` 实现）。代价是每次执行都会短暂停服；单用户场景可接受。
+- 影响：`update.sh` L3/L4；`T-008` 需记录实际停机窗口。
+- 可逆性：容易（改为按 HEAD/镜像 ID 判断即可）。
+
+### D-007 备份使用 compose 服务卷，不硬编码卷名
+
+- 日期：2026-11-18
+- 背景：Compose 会给命名卷加项目前缀（文档记录为 `losnote_losnote-data`）；硬编码 `-v losnote-data:/data` 可能挂到错误卷。
+- 选项：
+  - A. 硬编码 `losnote-data`；
+  - B. 用 `docker compose exec`（容器运行中）或 `docker compose run --no-deps`（容器停止）让 compose 解析服务与卷；
+  - C. 解析 `docker compose config` 的卷名后显式 `-v`。
+- 结论：**B**（`T-006` 实现）。避免项目前缀差异导致备份跳过或挂错卷；`T-008` 需用 `docker inspect` 确认实际卷名。
+- 影响：`update.sh` L2；恢复提示需引用 `docs/deploy.md` 第 6 节。
+- 可逆性：容易。
+
+### D-008 update.sh 并发锁使用 flock + fd 继承
+
+- 日期：2026-11-18
+- 背景：`mkdir`/PID/stale 锁在 WSL2 tmpfs 上无法保证互斥（并发 `mkdir` 100 次有 72 次两者都成功）；需要可靠的单实例更新锁，且不能留下 stale 锁。
+- 选项：
+  - A. `mkdir` + PID/stale/breaker；
+  - B. util-linux `flock`：wrapper 取锁后 worker 继承锁 fd，worker 退出由内核释放；
+  - C. 依赖 systemd-run/其他外部锁。
+- 结论：**B**（`T-006` r3 起）。锁文件优先 `/run/lock`，世界可写时回退 `$HOME/.cache/losnote-update`（0700）；worker 继承锁 fd，只杀 flock 监督进程不会留下无锁 worker。
+- 已知取舍：worker 的 docker/git 子进程也继承锁 fd；若孤儿进程存活，锁会短暂保留。锁不是安全边界，`LOSNOTE_UPDATE_LOCKED` 仅供内部重入。
+- 影响：`update.sh` L1 锁；`T-008` 需确认服务器 util-linux 支持 `flock -n`。
+- 可逆性：容易（换回 mkdir 或外部锁）。

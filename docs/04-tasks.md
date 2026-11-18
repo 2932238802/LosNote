@@ -1,12 +1,14 @@
 # 任务与追溯矩阵
 
-> 维护者：Doc Agent ｜ 最近更新：2026-11-18 ｜ 状态：`T-001` G3 通过；`T-002` G3 r1 通过（浏览器验收待 `T-003`）
-> 来源：`CR-001`（选项 A）/ `R-001 v1`
+> 维护者：Doc Agent ｜ 最近更新：2026-11-18 ｜ 状态：`CR-001` 的 `T-001`/`T-002` G3 通过；`CR-002` `T-006` **G3 r4 通过**、`T-008` BLOCKED；`CR-003` `T-007` G3 通过
+> 来源：`CR-001`（选项 A）/ `CR-002`（稳健版）/ `CR-003`（新矢量标记 + 仅标签页）
 > 任务状态只用：`TODO` / `DOING` / `DONE` / `BLOCKED` / `DROPPED`
 
 ## 关键路径
 
-`T-001 → T-002 → T-003`；`T-004` 可与 `T-002` 并行；`T-005` 依赖全部完成并由用户发布。
+- `CR-001`：`T-001 → T-002 → T-003`；`T-004` 可与 `T-002` 并行；`T-005` 依赖全部完成并由用户发布。
+- `CR-002`：`T-006 → T-008`（T-008 需服务器执行环境）。
+- `CR-003`：`T-007` 独立，可与其它任务并行。
 
 ### T-001 服务端到期题改为随机排序（状态：DONE）
 
@@ -114,6 +116,77 @@
 - 风险：线上数据与测试数据不同；到期题不足 5 道时需先补测试题或改在预发环境验收。
 - 规模：S
 
+### T-006 实现根目录 update.sh（状态：DONE）
+
+- 来源：`CR-002` / `R-002 v1`
+- 关联需求：`AC-002-1`、`AC-002-2`、`AC-002-3`、`AC-002-6`、`AC-002-7`、`AC-002-8`、`AC-002-9`
+- 目标：一条命令完成服务器拉新、备份、重建与验证；失败即停并给出回滚信息。
+- 涉及文件/模块：新增根目录 `update.sh`；`README.md`、`docs/deploy.md`、`AGENTS.md` 补充用法。
+- 前置依赖：无。
+- DoR：
+  - [x] AC 可测：浏览器/终端命令可判定；失败路径有明确退出码。
+  - [x] 依赖就绪：bash、git、Node 可用；Docker Compose v2 语义已在 `Dockerfile` / `docker-compose.yml` 中确认。
+  - [x] 关键决策已记录：`CR-002` 稳健版；参考 Vesta `update.sh` 的 L1–L5 思路。
+  - [x] 影响面已分析：仅新增运维脚本与文档；不改应用代码/API/数据。
+  - [x] 测试数据/环境可用：`bash -n` 与 `--help` 可在本机验证；**端到端 Docker 行为本机无 Docker，转 `T-008`**。
+  - [x] 规模 M。
+- 验证方式：
+  - `bash -n update.sh` 语法通过；
+  - `bash update.sh --help` 退出 0 且列出选项；
+  - 静态检查：脚本不含 `LOSNOTE_TOKEN` 值、不出现 `docker volume rm` / `reset --hard`；
+  - 失败前置检查可用临时目录/伪 git 仓库模拟（不触碰真实数据）。
+- 回归范围：无运行时影响；检查 `README.md` / `docs/deploy.md` / `AGENTS.md` 的现有部署命令仍有效。
+- 发布/回滚：新增文件；回滚 = 删除脚本或 revert 该文件。无数据迁移。
+- 风险：本机无 Docker，运行时行为只能静态审查；服务器环境差异（端口、Compose 版本、备份路径）。
+- G3 记录：2026-11-18 首次评审 **有条件通过**（P0/P1=0，P2=5，P3=8）；已返工 P2-1..P2-4 与低成本 P3，报告 `docs/reports/review-2026-11-18-T-006.md`。
+- G3 r1 记录：2026-11-18 复审 **不通过**（P1 锁竞态）；已改 flock，报告 `docs/reports/review-2026-11-18-T-006-r1.md`。
+- G3 r2 记录：2026-11-18 复审 **有条件通过**（P2 kill flock 监督进程；已派 r3），报告 `docs/reports/review-2026-11-18-T-006-r2.md`。
+- G3 r3 记录：2026-11-18 复审 **有条件通过**（新增 P2 并发双败 TOCTOU）；报告 `docs/reports/review-2026-11-18-T-006-r3.md`。
+- G3 r4 记录：2026-11-18 复审 **通过**（P0/P1/P2=0，仅 P3）：50/50 并发每轮恰好 1 个 worker、失败方均有锁冲突提示；只杀 wrapper 后 worker 持 fd 9、第二实例 0 次 compose version；worker 自身 exit 75 不误报。报告 `docs/reports/review-2026-11-18-T-006-r4.md`。真实 Docker 归 `T-008`。
+- 规模：M
+
+### T-007 网页端 favicon 与 index.html 声明（状态：DONE）
+
+- 来源：`CR-003` / `R-003 v1`
+- 关联需求：`AC-003-1`–`AC-003-7`
+- 目标：标签页显示新矢量标记，SVG + ICO/PNG 回退均可访问。
+- 涉及文件/模块：新增 `web/public/favicon.svg`、`favicon.ico`、`favicon-32.png`；修改 `web/index.html`。
+- 前置依赖：`A-005` 视觉方向确认。
+- DoR：
+  - [x] AC 可测：构建产物、HTTP 状态、Content-Type、人工 16px 观察。
+  - [x] 依赖就绪：`cd web && npm run build` 可用；Vite public 目录规则明确。
+  - [x] 关键决策已记录：新矢量标记、仅标签页、品牌色沿用 App。
+  - [x] 影响面已分析：仅静态资源与 index.html；不改 API/组件逻辑。
+  - [x] 测试数据/环境可用：本机无 ImageMagick/Pillow，需用 Node 生成或复用现有 PNG；`npm run build` 可验证落盘。
+  - [x] 规模 S。
+- 验证方式：
+  - `cd web && npm run build` 成功，`web/dist/favicon.svg`、`favicon.ico`、`favicon-32.png` 存在；
+  - 起静态服务或 `vite preview`，`curl -I` 三个资源均为 200 且 Content-Type 正确；
+  - 浏览器标签页人工观察 16px/32px；浅色/深色标签页各一次。
+- 回归范围：网页构建、Docker 多阶段构建（`COPY web/` 与 `web/dist`）、首页加载。
+- 发布/回滚：随 `web/dist` / 镜像发布；回滚 = 还原 `index.html` 与删除新增图标文件。
+- 风险：favicon 强缓存导致验收需硬刷新；16px 细节丢失；SVG 在旧浏览器不生效需确认 ICO 回退。
+- 完成记录：2026-11-18，新增 `web/public/favicon.svg` / `favicon.ico`（16/32/48）/ `favicon-32.png`，`web/index.html:6-8` 三条 icon link；`cd web && npm test` = 16/16；`npm run build` 成功（64 modules）；真实静态托管三资源 200 + MIME 正确。报告 `docs/reports/dev-2026-11-18-T-007.md`。
+- G3 记录：2026-11-18 Review Agent 判定 **通过**（无 P0/P1/P2，3 条 P3：16px 金星偏淡、Dev 报告像素示意不精确、品牌金色 token 小差异）；报告 `docs/reports/review-2026-11-18-T-007.md`。真实浏览器标签页视觉与 Docker 镜像内路径为残留人工验收项。
+- 规模：S
+
+### T-008 在服务器实跑 update.sh 验收（状态：BLOCKED）
+
+- 来源：`CR-002` / `R-002 v1`
+- 关联需求：`AC-002-4`、`AC-002-5`、`AC-002-6`、`AC-002-9`
+- 目标：在真实服务器上验证拉取、备份、重建、容器启动时间、健康检查与前端指纹。
+- 涉及文件/模块：服务器 `/opt/losnote`；`update.sh`。
+- 前置依赖：`T-006`。
+- DoR：
+  - [ ] **服务器访问/操作授权未确认**：本机无 Docker，Dev 无法端到端执行；需用户提供服务器执行环境或由用户按脚本运行并回传输出。**缺什么**：服务器执行与回传。**由谁补**：用户。
+  - [x] 验收步骤可复现：脚本输出 + `docker compose ps` + `/api/health` + 备份文件列表。
+  - [x] 规模 S。
+- 验证方式：在服务器执行 `bash update.sh`；记录 HEAD、备份文件、容器 StartedAt、health 输出、首页资源指纹；再执行一次验证幂等。
+- 回归范围：网页端登录/题库/复习、安卓同步、数据卷完整性。
+- 发布/回滚：脚本内置回滚提示；本任务不额外发布。
+- 风险：真实数据与停机窗口；备份失败；服务器无法访问 GitHub。
+- 规模：S
+
 ## AC ↔ 验证追溯矩阵
 
 | AC | 验证方式 | 对应任务 | 状态 |
@@ -126,3 +199,19 @@
 | AC-001-6 | 纯函数单测（401/断网文案）+ 手工 / 浏览器 E2E（恢复后可重试） | T-002、T-003 | T-002 文案映射已单测，r1 已拆分 `categoriesError` 与取题 `error`，G3 r1 通过；浏览器恢复重试待 T-003 |
 | AC-001-7 | 现有服务端契约测试 + 新增响应结构断言 | T-001 | G3 通过（T-001） |
 | AC-001-8 | 性能基准（1000 道到期题，3 次中位数 < 100ms） | T-004 | 待验证 |
+| AC-002-1 | 伪 git 仓库 / 缺 `.env` / 缺 docker 的静态与命令验证 | T-006 | G3 通过 |
+| AC-002-2 | 服务器 `git fetch/pull --ff-only` + `HEAD == origin/main` | T-006、T-008 | 本机通过；真实服务器待 T-008 |
+| AC-002-3 | 服务器检查备份文件、SQLite 可读、保留策略 | T-006、T-008 | 本机逻辑层通过；真实卷待 T-008 |
+| AC-002-4 | `docker compose up -d --build` + `docker inspect StartedAt` | T-008 | 待 T-008 真实 Docker |
+| AC-002-5 | `/api/health` 200 + 首页资源指纹 | T-008 | 待 T-008 真实镜像 |
+| AC-002-6 | 人为制造失败，检查退出码、日志、回滚提示 | T-006、T-008 | G3 通过；真实日志待 T-008 |
+| AC-002-7 | 两个实例并发执行，第二个立即退出 | T-006、T-008 | G3 r4 通过（50/50 恰好一个 worker）；真实服务器待 T-008 |
+| AC-002-8 | `--help`、`--no-pull`、token 不落日志 | T-006 | G3 通过 |
+| AC-002-9 | 连续执行两次，检查容器/备份/数据 | T-008 | 待 T-008 真实 Docker |
+| AC-003-1 | 检查 `web/index.html` 的 link 标签 | T-007 | G3 通过（三条 link） |
+| AC-003-2 | `curl -I` 三个图标资源与 Content-Type | T-007 | G3 通过（200 + MIME + sha256） |
+| AC-003-3 | `npm run build` 后检查 `web/dist`；Docker 镜像内路径 | T-007 | G3 通过（dist；Docker 镜像内待实跑） |
+| AC-003-4 | 16px 人工观察 / 截图 | T-007 | G3 通过（像素解码；真实标签页待人工） |
+| AC-003-5 | 浅色/深色标签页人工观察 | T-007 | G3 通过（对比度计算；实机待人工） |
+| AC-003-6 | 检查 HTML/SVG 无外部 URL | T-007 | G3 通过（3139B，无外链） |
+| AC-003-7 | 禁用 SVG favicon 或旧浏览器回退检查 | T-007 | G3 通过（ICO 16/32/48 结构合法；旧浏览器实机待人工） |

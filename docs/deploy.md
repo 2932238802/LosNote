@@ -124,6 +124,23 @@ docker logs -f losnote    # 看到「监听中」即可
 
 ## 7. 升级
 
+推荐用仓库根目录的 `update.sh`：它会先检查 `.env`、git/docker、干净工作区与 `main` 分支，
+`git fetch origin main` + `git pull --ff-only` 后校验 `HEAD == origin/main`；重建前用
+`VACUUM INTO` 把数据库备份到数据卷的 `/data/backups/`（保留最近 14 份），再
+`docker compose up -d --build`，最后验证容器启动时间、`/api/health` 与首页入口资源。
+前置检查失败会直接退出且不改动工作区；运行阶段失败会退出非 0、打印日志与回滚提示，
+且不会删除 `losnote-data` 卷。脚本内部使用 `--force-recreate` 确保容器真正重启，会有短暂停服。
+并发锁依赖 util-linux 的 `flock`（Ubuntu/Debian 默认安装，需支持 `-E`/`-o`）；缺失时脚本会在
+前置检查阶段明确报错。
+
+```bash
+cd /opt/losnote && bash update.sh
+```
+
+`--help` 查看选项；`--no-pull` 只跳过 `git pull`，仍会 fetch 并校验本地与 `origin/main` 一致。
+
+也可以继续手工执行：
+
 ```bash
 cd /opt/losnote && git pull
 docker compose up -d --build      # 重建镜像，数据卷不受影响
@@ -160,18 +177,59 @@ docker compose up -d --build
 镜像会在服务器上构建（会下载一次 npm 依赖，约 1–2 分钟）。构建完成后
 `curl http://127.0.0.1:8787/api/health` 应返回 `{"ok":true,...}`。
 
-## 已部署实例（2026-11-06）
+## 已部署实例（2026-11-06，2026-11-18 审计更新）
+
+> **2026-11-18 更新**：服务器实际工作目录已迁到 `/opt/losnote`（git 仓库，分支 `main`）；
+> 下表 `/opt/losnote-3dfb6e2` 是 2026-11-06 的发布包记录，仅作历史参考。
+> 升级前请先确认路径、仓库类型与卷名：
+> `git -C /opt/losnote remote -v`、`docker inspect losnote`、`docker compose config`。
+> 曾在服务器观察到 `origin` 指向本地镜像 `/opt/git/losnote.git`，导致 `git pull` 显示
+> Already up to date 但 HEAD 仍是旧提交；使用 `update.sh` 前应确认 origin 已指向可用的远端。
 
 | 项 | 值 |
 | --- | --- |
 | 服务器 | `root@47.111.175.191`（Ubuntu 26.04，Docker 29.1.3 + compose 2.40.3） |
-| 代码目录 | `/opt/losnote-3dfb6e2`（发布包解压，非 git 仓库） |
-| 令牌 | 在服务器 `/opt/losnote-3dfb6e2/.env` 的 `LOSNOTE_TOKEN` 里（不要提交进仓库） |
-| 数据卷 | `losnote_losnote-data`（`COMPOSE_PROJECT_NAME=losnote` 固定，换目录不影响数据） |
+| 代码目录 | `/opt/losnote`（git 工作区，当前）；旧发布包 `/opt/losnote-3dfb6e2` 仅历史参考 |
+| 令牌 | 在服务器 `/opt/losnote/.env` 的 `LOSNOTE_TOKEN` 里（不要提交进仓库） |
+| 数据卷 | 文档记录为 `losnote_losnote-data`（`COMPOSE_PROJECT_NAME=losnote` 固定）；实际卷名用 `docker inspect losnote` 确认 `[待确认]` |
 | 容器 | `losnote`，`0.0.0.0:8787->8787`，`restart: unless-stopped` |
 
-升级：把新发布包 scp 上去解压到新目录，复制旧 `.env`，在新目录 `docker compose up -d --build`
-（同名容器会替换；数据卷名由 `COMPOSE_PROJECT_NAME` 决定，不会丢）。
+升级：在 git 工作区执行 `bash update.sh`（推荐）；或继续手工 `git pull` + `docker compose up -d --build`。
+若仍从发布包目录部署，请先按下一节迁移到 git 工作区，避免 compose 挂到新的空数据卷。
+
+### 从发布包目录迁移到 git 工作区
+
+旧实例如果是发布包解压目录（如 `/opt/losnote-3dfb6e2`，非 git 仓库），不要直接在新目录
+`docker compose up`，否则 compose 可能创建新的空数据卷，服务看起来“数据被清空”。按以下步骤：
+
+```bash
+# 1. 克隆到固定目录（origin 用 SSH；HTTPS 不可用时优先 SSH）
+git clone git@github.com:2932238802/LosNote.git /opt/losnote
+
+# 2. 复制旧 .env（含 LOSNOTE_TOKEN；不要提交）
+cp /opt/losnote-3dfb6e2/.env /opt/losnote/.env
+
+# 3. 确认 compose 项目名/卷名与旧实例一致
+cd /opt/losnote
+docker compose config | grep -E 'name:|volume|losnote-data'
+docker inspect losnote --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{"\n"}}{{end}}'
+```
+
+如果 `docker compose config` 显示的卷名不是旧实例实际挂载的卷（文档记录为
+`losnote_losnote-data`），在 `.env` 里加：
+
+```bash
+COMPOSE_PROJECT_NAME=losnote
+```
+
+再次 `docker compose config` 确认卷名一致后，再启动：
+
+```bash
+docker compose up -d --build      # 复用旧数据卷，不要加 -v
+```
+
+确认 `/api/health`、题库条数与旧实例一致后，日常更新改用 `bash update.sh`。
+不要执行 `docker compose down -v`，也不要删除旧数据卷。
 
 **注意**：该云主机安全组是白名单，当前放行 `22 / 8080 / 8081 / 8082 / 8790`，
 所以要外网访问 LosNote 还需在云控制台安全组里放行 `8787`（或 80/443 + 反代）。
