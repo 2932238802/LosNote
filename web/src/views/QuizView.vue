@@ -1,7 +1,7 @@
 <template>
   <div class="stack">
     <div class="row">
-      <select v-model="category" style="width: 200px" @change="start">
+      <select v-model="category" style="width: 200px" :disabled="loading" @change="start">
         <option value="">全部栏目</option>
         <option v-for="c in categories" :key="c.name" :value="c.name">{{ c.name }}</option>
       </select>
@@ -15,8 +15,14 @@
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
+    <p v-else-if="categoriesError" class="error">{{ categoriesError }}</p>
 
     <div v-if="loading" class="empty">正在取题…</div>
+
+    <div v-else-if="!queue.length && error" class="empty">
+      <div class="empty-mark">!</div>
+      取题失败，请按上方提示重试。
+    </div>
 
     <div v-else-if="!queue.length" class="empty">
       <div class="empty-mark">—</div>
@@ -76,6 +82,9 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { api } from '../api.js';
+import { createLatestRequestGuard } from '../request-guard.js';
+import { orderForStart } from '../quiz-order.js';
+import { quizErrorText } from '../quiz-error.js';
 import { humanDue } from '../markdown.js';
 import MarkdownView from '../components/MarkdownView.vue';
 
@@ -89,9 +98,15 @@ export default {
     const loading = ref(false);
     const grading = ref(false);
     const error = ref('');
+    // 栏目录取失败与取题失败分开，避免两者互相覆盖，也避免把空状态误标为取题失败
+    const categoriesError = ref('');
     const category = ref('');
     const categories = ref([]);
     const done = ref(0);
+    // 上一次成功抽到的首题，用于「重新抽题」时避重（不参与渲染，无需响应式）
+    let previousFirstUuid = '';
+    // 并发 start() 时只应用最后一次请求的响应
+    const dueRequests = createLatestRequestGuard();
 
     const current = computed(() => queue.value[index.value] || null);
     const pct = computed(() =>
@@ -103,24 +118,33 @@ export default {
       try {
         const res = await api.categories();
         categories.value = res.items || [];
+        categoriesError.value = '';
       } catch (e) {
-        error.value = e.message;
+        // 栏目失败不影响取题；单独提示，避免覆盖取题错误或误触发「取题失败」
+        categoriesError.value = `栏目加载失败：${quizErrorText(e)}`;
       }
     }
 
     async function start() {
+      const request = dueRequests.begin();
       loading.value = true;
       error.value = '';
       try {
         const res = await api.due({ category: category.value, limit: 100 });
-        queue.value = res.items || [];
+        if (!dueRequests.isLatest(request)) return;
+        const items = Array.isArray(res.items) ? res.items : [];
+        // 本地洗牌 + 到期题 > 1 时避开上一次首题；老版服务端固定顺序也能生效
+        queue.value = orderForStart(items, previousFirstUuid);
+        previousFirstUuid = queue.value[0]?.uuid || '';
         index.value = 0;
         revealed.value = false;
         done.value = 0;
       } catch (e) {
-        error.value = e.message;
+        if (!dueRequests.isLatest(request)) return;
+        error.value = quizErrorText(e);
       } finally {
-        loading.value = false;
+        // 旧请求结束时不能把最新请求的 loading 提前关掉
+        if (dueRequests.isLatest(request)) loading.value = false;
       }
     }
 
@@ -177,6 +201,7 @@ export default {
       loading,
       grading,
       error,
+      categoriesError,
       category,
       categories,
       done,

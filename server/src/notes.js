@@ -346,7 +346,7 @@ export function listCategories(db) {
     .map((r) => ({ name: r.name, total: Number(r.total), mastered: Number(r.mastered) }));
 }
 
-/** 到期需复习的题：next_review <= now 或从未复习 */
+/** 到期需复习的题：next_review <= now 或从未复习；随机抽题（每次请求顺序不同） */
 export function listDue(db, { category = '', limit = 100, onlyUnknown = false, now = Date.now() } = {}) {
   const where = ["deleted = 0", "(next_review <= ? OR review_count = 0)"];
   const args = [now];
@@ -360,7 +360,7 @@ export function listDue(db, { category = '', limit = 100, onlyUnknown = false, n
   const rows = db
     .prepare(
       `SELECT * FROM notes WHERE ${where.join(' AND ')}
-        ORDER BY next_review ASC, created_at DESC LIMIT ?`
+        ORDER BY RANDOM() LIMIT ?`
     )
     .all(...args, Math.min(Number(limit) || 100, 1000));
   return rows.map(rowToNote);

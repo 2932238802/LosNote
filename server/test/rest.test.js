@@ -380,3 +380,117 @@ test('删除走墓碑，同步能把它带给别的设备', async () => {
   assert.ok(tomb, '增量里应有这条删除');
   assert.equal(tomb.deleted, true);
 });
+
+test('到期抽题：多次请求首题不恒定，且返回同一批到期题', async () => {
+  // 独立栏目隔离共享库中的其他题，保证本用例的数据集确定。
+  const category = '随机抽题回归';
+  const made = [];
+  for (let i = 0; i < 8; i += 1) {
+    const r = await json('/api/notes', {
+      method: 'POST',
+      body: { name: `随机题 ${i}`, definition: `d${i}`, category },
+    });
+    made.push(r.payload.note.uuid);
+  }
+  const expected = [...made].sort();
+
+  const firsts = [];
+  for (let i = 0; i < 20; i += 1) {
+    const due = await json('/api/quiz/due?category=' + encodeURIComponent(category) + '&limit=100');
+    assert.equal(due.status, 200);
+    assert.equal(due.payload.items.length, 8, '每次都应返回同一批到期题');
+    assert.deepEqual(
+      due.payload.items.map((n) => n.uuid).sort(),
+      expected,
+      '随机只改顺序，不改结果集'
+    );
+    firsts.push(due.payload.items[0].uuid);
+  }
+  // 确定性下界：只要求首题出现过不止一种，不要求 20 次全不同（避免统计型 flaky）。
+  // 旧实现按 next_review ASC, created_at DESC 排序时首题恒定，本断言必然失败。
+  assert.ok(new Set(firsts).size >= 2, `首题不应恒定，实际序列: ${firsts.join(',')}`);
+});
+
+test('到期抽题：category/onlyUnknown/limit 过滤语义与响应结构不变', async () => {
+  const catA = '随机过滤A';
+  const catB = '随机过滤B';
+  const uuidsA = [];
+  for (let i = 0; i < 3; i += 1) {
+    const r = await json('/api/notes', {
+      method: 'POST',
+      body: { name: `A${i}`, definition: 'x', category: catA },
+    });
+    uuidsA.push(r.payload.note.uuid);
+  }
+  const uuidsB = [];
+  for (let i = 0; i < 2; i += 1) {
+    const r = await json('/api/notes', {
+      method: 'POST',
+      body: { name: `B${i}`, definition: 'y', category: catB },
+    });
+    uuidsB.push(r.payload.note.uuid);
+  }
+
+  const a = await json('/api/quiz/due?category=' + encodeURIComponent(catA) + '&limit=100');
+  assert.equal(a.status, 200);
+  assert.deepEqual(a.payload.items.map((n) => n.uuid).sort(), [...uuidsA].sort());
+  assert.ok(a.payload.items.every((n) => n.category === catA), '只返回该栏目的题');
+
+  const b = await json('/api/quiz/due?category=' + encodeURIComponent(catB) + '&limit=100');
+  assert.equal(b.payload.items.length, 2);
+  assert.ok(b.payload.items.every((n) => n.category === catB));
+
+  const limited = await json('/api/quiz/due?category=' + encodeURIComponent(catA) + '&limit=2');
+  assert.equal(limited.payload.items.length, 2, 'limit 仍然生效');
+
+  // onlyUnknown：推入一条「已掌握但 next_review 到期」的题，应被 onlyUnknown=1 排除。
+  const unknownUuid = 'random-unknown-filter-1';
+  const now = Date.now();
+  const pushed = await json('/api/sync', {
+    method: 'POST',
+    body: {
+      notes: [
+        {
+          uuid: unknownUuid,
+          name: '已掌握的到期题',
+          definition: 'z',
+          category: catA,
+          createdAt: now,
+          mastery: 1,
+          intervalDays: 1,
+          easeFactor: 250,
+          reviewCount: 1,
+          nextReview: 0,
+          lastReview: now - 1000,
+          stars: 2,
+          contentTs: now,
+          srsTs: now,
+        },
+      ],
+    },
+  });
+  assert.equal(pushed.status, 200);
+  assert.equal(pushed.payload.applied.notes, 1);
+
+  const withMastered = await json('/api/quiz/due?category=' + encodeURIComponent(catA) + '&limit=100');
+  assert.ok(withMastered.payload.items.some((n) => n.uuid === unknownUuid));
+  const unknownOnly = await json(
+    '/api/quiz/due?category=' + encodeURIComponent(catA) + '&onlyUnknown=1&limit=100'
+  );
+  assert.deepEqual(
+    unknownOnly.payload.items.map((n) => n.uuid).sort(),
+    [...uuidsA].sort(),
+    'onlyUnknown=1 应排掉已掌握的题'
+  );
+
+  // 响应结构契约（AC-001-7）：顶层只有 items/dueTotal，题目字段与旧客户端一致。
+  assert.deepEqual(Object.keys(withMastered.payload).sort(), ['dueTotal', 'items']);
+  assert.equal(typeof withMastered.payload.dueTotal, 'number');
+  for (const key of [
+    'uuid', 'name', 'definition', 'category', 'createdAt', 'mastery',
+    'intervalDays', 'easeFactor', 'reviewCount', 'nextReview', 'lastReview',
+    'stars', 'deleted', 'seq',
+  ]) {
+    assert.ok(key in withMastered.payload.items[0], '到期题缺少字段: ' + key);
+  }
+});

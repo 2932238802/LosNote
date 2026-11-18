@@ -99,7 +99,11 @@ AI 整理导入（提示词与去重逻辑与安卓一致）、网页复习（�
 
 ## 6. 验证状态
 
-- `server/` 测试 28 个全过（SRS、批量解析、增量同步、墓碑三例）
+> 2026-11-18 Doc Agent 审计更新：以下为最新可复核状态；历史数字见 git 历史。
+> 本文是设计文档，测试通过数随代码演进，`00-overview.md` 与 `STATUS.md` 维护当前状态。
+
+- `server/` 测试 **42 个全过**（2026-11-18 实跑 `cd server && npm test`：`tests 42 / pass 42 / fail 0`；T-001 新增 2 个到期抽题用例）
 - 真实 HTTP 契约测试：字段名与 `SyncClient` 完全一致，墓碑推送后 `deleted=true`、题库列表不再返回
 - v5→v6 迁移 SQL 用 `node:sqlite` 模拟跑通（含回填与索引）
-- 安卓端本机无 JDK/SDK，未编译 APK；Java 语法用 `java-parser` 全量解析通过（23 个文件 0 失败），布局 XML 全部校验通过
+- 安卓端：当前 `versionName = "1.2"`；README 记录 `./gradlew assembleDebug` 与 `./gradlew test` 已实测通过。
+  **2026-11-18 审计未复跑**（本机无 `.toolchain/`）；静态统计 `@Test` 共 25 个，实际通过数待实跑确认。

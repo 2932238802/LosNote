@@ -11,7 +11,8 @@
 ## 首次上手（手机 + 网页）
 
 1. **服务端起起来**（见下节，或直接用现成的服务器 / `docs/deploy.md`）。
-2. **手机**：装 `dist/losnote-v1.1-debug.apk`（debug 包，系统会提示「未知来源」，允许即可）→
+2. **手机**：先构建 APK（`./gradlew assembleDebug`，Windows 用 `gradlew.bat`），产物在
+   `app/build/outputs/apk/debug/app-debug.apk`（当前 versionName 1.2；debug 包系统会提示「未知来源」，允许即可）→
    打开后到「题库」页右上角 **设置 → 云同步** → 填 `http://<服务器IP>:8787` 和令牌 →
    **保存并同步**。第一次同步会把手机里已有的题全量推到服务器（v5→v6 自动迁移，不用手动处理）。
 3. **网页**：浏览器打开 `http://<服务器IP>:8787`，输同一个令牌进入。
@@ -25,7 +26,8 @@
 墨绿 `#3D7456` 做「记住」类操作、赭金 `#82602A` 做星级），卡片 12dp 圆角 + 1dp 细边框、不堆阴影，
 栏目用胶囊 tag，底部为带选中指示器的四栏导航，浅色/深色同一套语义色。
 
-界面截图（Robolectric 渲染，非真机）：`dist/preview-android/`，其中 `montage.png` 是四页拼图。
+界面截图可用 `bash scripts/test-android.sh --tests "com.example.losnote.ui.UiShotTest"` 生成到
+`app/build/ui-shots/`（Robolectric 渲染，非真机；`dist/` 不入库）。
 
 ## 快速开始
 
@@ -120,8 +122,9 @@ docker compose up -d --build
 ## 测试
 
 ```bash
-cd server && npm test       # node:test：SRS / 导入解析 / 备份导入 / 同步（含墓碑）/ REST 路由集成，40 个用例
-bash scripts/test-android.sh  # 安卓 JVM 单测 21 个（Robolectric：v5→v6 迁移、字段组 LWW、同步客户端、备份互通）
+cd server && npm test       # node:test：SRS / 导入解析 / 备份导入 / 同步（含墓碑）/ REST 路由集成，42 个用例
+cd web && npm test          # 网页端纯函数单测：洗牌/避重、错误文案、请求守卫，16 个用例
+bash scripts/test-android.sh  # 安卓 JVM 单测 25 个 @Test（Robolectric：v5→v6 迁移、字段组 LWW、同步客户端、备份互通、UI 冒烟/截图；跨语言 E2E 默认跳过）
 bash scripts/e2e-sync.sh      # 跨语言 E2E：真 Node 服务 + 真 SyncClient（建题→同步→换设备→拉回 SRS）
 ```
 
